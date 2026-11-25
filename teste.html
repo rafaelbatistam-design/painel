@@ -1799,7 +1799,7 @@ function ativosC(){return S.casos.filter(c=>c.status!=='encerrado');}
 function ativosP(){return S.prospeccao.filter(p=>!['contratou','nao_contratou'].includes(p.stage));}
 function provItems(){
   const out=[];
-  const push=(x,isP)=>pendTasks(x).forEach(t=>{if(!isJud(t.tipo))out.push({c:x,t,isP,d:t.data?daysTo(t.data):null});});
+  const push=(x,isP)=>pendTasks(x).forEach(t=>{if(!isJud(t.tipo)||t.tipo==='prazo')out.push({c:x,t,isP,d:t.data?daysTo(t.data):null});});
   ativosC().forEach(c=>push(c,false));ativosP().forEach(p=>push(p,true));
   return out;
 }
@@ -1832,7 +1832,7 @@ function render(){
   document.getElementById('hdr-date').textContent=now.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const jud=judAlertCount();
   document.getElementById('hdr-alert').innerHTML=jud>0?`<div class="alert-pill pill-red">${jud} ${jud>1?'atos judiciais em até 7 dias':'ato judicial em até 7 dias'}</div>`:`<div class="alert-pill pill-grn">Sem prazos críticos</div>`;
-  const prov=provItems();const hojeN=prov.filter(isHoje).length;
+  const prov=provItems();const hojeN=prov.filter(o=>isHoje(o)).length;
   const cnt={prov:{n:prov.length,hot:hojeN>0},casos:{n:ativosC().length},prospeccao:{n:ativosP().length}};
   document.getElementById('tabs').innerHTML=`<div class="nav-brand">Marquez Advogados</div>`+NAV.map(n=>{
     const on=S.tab===n.id;const c=cnt[n.id];
@@ -1914,8 +1914,8 @@ function dashRow(o){
 }
 function bDash(){
   const prov=provItems();
-  const hoje=prov.filter(isHoje).map(o=>Object.assign({kind:'task'},o));
-  const prox=prov.filter(o=>o.d!==null&&o.d>=1&&o.d<=7&&!o.t.foco).map(o=>Object.assign({kind:'task'},o));
+  const hoje=prov.filter(o=>!isJud(o.t.tipo)&&isHoje(o)).map(o=>Object.assign({kind:'task'},o));
+  const prox=prov.filter(o=>!isJud(o.t.tipo)&&o.d!==null&&o.d>=1&&o.d<=7&&!o.t.foco).map(o=>Object.assign({kind:'task'},o));
   getAllProximasParcelas(60).forEach(it=>{if(it.dl===null)return;if(it.dl<=0)hoje.push({kind:'hon',it,d:it.dl});else if(it.dl<=7)prox.push({kind:'hon',it,d:it.dl});});
   ativosP().forEach(p=>{
     if(!p.followupDate)return;
@@ -2027,7 +2027,7 @@ function quickAdd(cid,txt){
 const ETAPAS=[['fazer','A fazer','var(--muted)'],['andamento','Em andamento','var(--blu)'],['aguardando','Aguardando terceiro','var(--ora)']];
 function etapaOf(t){return t.etapa||(t.tipo==='followup'?'aguardando':'fazer');}
 const ETAPA_CHIP={andamento:['▶ Em andamento','var(--blu)','var(--blu-bg)','var(--blu-b)'],aguardando:['⏳ Aguardando terceiro','var(--ora)','var(--ora-bg)','var(--ora-b)']};
-function chipEtapa(t){if(t.feito||isJud(t.tipo))return'';const e=ETAPA_CHIP[etapaOf(t)];if(!e)return'';return`<span class="chip" style="color:${e[1]};background:${e[2]};border-color:${e[3]}">${e[0]}</span>`;}
+function chipEtapa(t){if(t.feito||(isJud(t.tipo)&&t.tipo!=='prazo'))return'';const e=ETAPA_CHIP[etapaOf(t)];if(!e)return'';return`<span class="chip" style="color:${e[1]};background:${e[2]};border-color:${e[3]}">${e[0]}</span>`;}
 function feitasRecentes(){
   const out=[];const push=(x,isP)=>(x.tarefas||[]).forEach(t=>{if(t.feito&&!isJud(t.tipo)&&t.dataFeito&&daysSince(t.dataFeito)<=7)out.push({c:x,t,isP,d:null});});
   ativosC().forEach(c=>push(c,false));ativosP().forEach(p=>push(p,true));
@@ -2124,7 +2124,7 @@ function taskEditRow(c,t){
       <span style="display:flex;flex-direction:column;gap:2px"><span id="et-data-lbl-${t.id}" style="font-size:9px;color:var(--faint)">${l1}</span><input type="date" id="et-data-${t.id}" value="${t.data||''}" style="width:128px;${inp}"></span>
       <span id="et-x-wrap-${t.id}" style="display:${tem?'flex':'none'};flex-direction:column;gap:2px"><span id="et-x-lbl-${t.id}" style="font-size:9px;color:var(--faint)">${l2}</span><input type="date" id="et-x-${t.id}" value="${xval}" style="width:128px;${inp}"></span>
       <span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:9px;color:var(--faint)">hora</span><input type="time" id="et-hora-${t.id}" value="${t.hora||''}" style="width:96px;${inp}"></span>
-      ${meta.jud?'':`<span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:9px;color:var(--faint)">andamento</span><select id="et-etapa-${t.id}" style="${inp}">${ETAPAS.map(([id,l])=>`<option value="${id}" ${etapaOf(t)===id?'selected':''}>${l}</option>`).join('')}</select></span>`}
+      ${meta.jud&&t.tipo!=='prazo'?'':`<span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:9px;color:var(--faint)">andamento</span><select id="et-etapa-${t.id}" style="${inp}">${ETAPAS.map(([id,l])=>`<option value="${id}" ${etapaOf(t)===id?'selected':''}>${l}</option>`).join('')}</select></span>`}
       <button class="btn btn-pri btn-sm" onclick="saveTaskEdit('${c.id}','${t.id}')">Salvar</button>
       <button class="btn btn-ghost btn-sm" onclick="cancelTaskEdit()">Cancelar</button>
     </div>

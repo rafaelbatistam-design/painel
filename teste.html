@@ -442,6 +442,20 @@ details.next7[open]>summary{border-bottom:1px solid var(--line);}
 .kb-card{padding:9px 10px;}
 .kb-card-name,.kb-card-meta{white-space:normal;overflow-wrap:anywhere;}
 @media(max-width:900px){.kb-scroll{overflow-x:auto;}.kb{min-width:min-content !important;}.kb-col{min-width:200px !important;}}
+@media(min-width:901px){
+  .kb-scroll{overflow-x:visible;}
+  .kb{gap:8px;min-width:0 !important;}
+  .kb-col{min-width:0 !important;}
+  .kb-col-h{padding:7px 9px;}
+  .kb-col-h .t{font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .kb-card,.pv-card{padding:9px 10px;}
+  .kb-col:has(.kb-final){flex:.55 1 0;}
+}
+@media(min-width:901px){
+  .kb-col-h .t{white-space:normal;overflow:visible;line-height:1.25;}
+  .kb-col-h{align-items:center;min-height:38px;}
+  .kb-col:has(.kb-final){flex:.75 1 0;}
+}
 </style>
 </head>
 <body>

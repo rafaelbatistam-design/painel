@@ -1335,7 +1335,7 @@ function bProsp(){
   return bar+`<div class="md">
     <div class="md-list ${hideList}">
       <div class="md-search"><input placeholder="Buscar prospecção…" value="${esc(S.search)}" oninput="S.search=this.value;render()"></div>
-      <div class="md-rows">${list.length?list.map(p=>prospRow(p)).join(''):`<div class="empty" style="padding:26px">Nenhuma prospecção neste filtro.</div>`}</div>
+      <div class="md-rows">${list.length?prospRowsAgrupadas(list):`<div class="empty" style="padding:26px">Nenhuma prospecção neste filtro.</div>`}</div>
     </div>
     ${sel?`<div class="drawer-bg" onclick="fecharFicha()"></div>`:''}<div class="md-detail ${hideDetail} ${sel?'open':''}">
       <button class="drawer-x" onclick="fecharFicha()" title="Fechar (Esc)">× Fechar</button>
@@ -2487,6 +2487,32 @@ function applyC(c,field,value){
   if(f==='status'){const v=sm[value.toLowerCase()];if(v)c.status=v;}
   else if(field==='deadline'||field==='prazo'){c.tarefas.push({id:uid(),texto:'Prazo judicial',tipo:'prazo',data:parseDate(value),dataInicio:'',dataFim:'',hora:'',feito:false,dataFeito:''});}
   else if(f in c)c[f]=value;
+}
+
+// ── prospecção: lista em blocos por etapa ──────────────
+const ORDEM_ETAPA=['aguardando_retorno','elaborar_proposta','examinar_docs','aguardando_docs','fazer_contato','contratou','nao_contratou'];
+function grupoP(p){return precisaCaso(p)?'_abrir':p.stage;}
+function urgP(p){
+  const nt=pendTasks(p).filter(t=>t.data).map(t=>daysTo(t.data));const fu=p.followupDate?daysTo(p.followupDate):null;
+  const v=[...nt,fu].filter(x=>x!==null);return v.length?Math.min(...v):999;
+}
+function sortP(arr){
+  const ord=g=>g==='_abrir'?-1:(ORDEM_ETAPA.indexOf(g)<0?99:ORDEM_ETAPA.indexOf(g));
+  return[...arr].sort((a,b)=>ord(grupoP(a))-ord(grupoP(b))||urgP(a)-urgP(b)||a.name.localeCompare(b.name,'pt-BR'));
+}
+function prospRowsAgrupadas(list){
+  let out='',atual=null;
+  sortP(list).forEach(p=>{
+    const g=grupoP(p);
+    if(g!==atual){
+      atual=g;const n=list.filter(x=>grupoP(x)===g).length;
+      const lbl=g==='_abrir'?'Contratou: falta abrir o caso':((STAGES.find(s=>s.id===g)||{}).label||g);
+      const col=g==='_abrir'?'var(--red)':(STAGE_COLOR[g]||{}).fg||'var(--muted)';
+      out+=`<div class="md-group-h" style="color:${col};font-size:11px;padding:12px 18px 6px;border-bottom:1px solid var(--line);background:#fbfaf7">${lbl} · ${n}</div>`;
+    }
+    out+=prospRow(p);
+  });
+  return out;
 }
 
 window.addEventListener('resize',setTop);

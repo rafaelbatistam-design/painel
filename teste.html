@@ -1909,7 +1909,7 @@ function dashRow(o){
     <input type="checkbox" class="dr-chk" title="Concluir" onchange="toggleTask('${c.id}','${t.id}',this.checked)">
     <button class="star ${t.foco?'on':''}" title="${t.foco?'Tirar de hoje':'Fazer hoje'}" onclick="toggleFoco('${c.id}','${t.id}')">${t.foco?'★':'☆'}</button>
     <div class="dr-c"><div class="dr-txt">${esc(t.texto)}</div>
-      <div class="dr-meta">${chipTipo(t)}<span class="dr-cli" onclick="${goItem(c)}">${esc(itemName(c))}</span>${o.isP?'<span style="color:var(--faint)">prospecção</span>':''}${subs.length?`<span>☑ ${sd}/${subs.length}</span>`:''}</div></div>
+      <div class="dr-meta">${chipTipo(t)}${chipEtapa(t)}<span class="dr-cli" onclick="${goItem(c)}">${esc(itemName(c))}</span>${o.isP?'<span style="color:var(--faint)">prospecção</span>':''}${subs.length?`<span>☑ ${sd}/${subs.length}</span>`:''}</div></div>
     <div class="dr-when" style="color:${w.col}">${w.txt}</div></div>`;
 }
 function bDash(){
@@ -2026,17 +2026,29 @@ function quickAdd(cid,txt){
 }
 const ETAPAS=[['fazer','A fazer','var(--muted)'],['andamento','Em andamento','var(--blu)'],['aguardando','Aguardando terceiro','var(--ora)']];
 function etapaOf(t){return t.etapa||(t.tipo==='followup'?'aguardando':'fazer');}
+const ETAPA_CHIP={andamento:['▶ Em andamento','var(--blu)','var(--blu-bg)','var(--blu-b)'],aguardando:['⏳ Aguardando terceiro','var(--ora)','var(--ora-bg)','var(--ora-b)']};
+function chipEtapa(t){if(t.feito||isJud(t.tipo))return'';const e=ETAPA_CHIP[etapaOf(t)];if(!e)return'';return`<span class="chip" style="color:${e[1]};background:${e[2]};border-color:${e[3]}">${e[0]}</span>`;}
+function feitasRecentes(){
+  const out=[];const push=(x,isP)=>(x.tarefas||[]).forEach(t=>{if(t.feito&&!isJud(t.tipo)&&t.dataFeito&&daysSince(t.dataFeito)<=7)out.push({c:x,t,isP,d:null});});
+  ativosC().forEach(c=>push(c,false));ativosP().forEach(p=>push(p,true));
+  return out.sort((a,b)=>(b.t.dataFeito||'').localeCompare(a.t.dataFeito||''));
+}
 function provBoard(items){
   items=[...items].sort(provSort);
-  return`<div class="kb-scroll"><div class="kb">${ETAPAS.map(([id,l,col])=>{
+  const feitas=feitasRecentes();
+  const colFeitas=`<div class="kb-col" style="flex:1 1 0;min-width:220px"><div class="kb-col-h" style="border-left-color:var(--grn)"><span class="t" style="color:var(--grn)">Concluídas (7 dias)</span><span class="c">${feitas.length}</span></div>
+    <div class="kb-drop pv-drop" data-etapa="feito">${feitas.map(o=>`<div class="pv-card" draggable="true" data-cid="${o.c.id}" data-tid="${o.t.id}" style="opacity:.7">
+      <div class="cli">${esc(itemName(o.c))}</div><div class="tx" style="text-decoration:line-through">${esc(o.t.texto)}</div>
+      <div class="mt">${chipTipo(o.t)}<span>concluída em ${fDateShort(o.t.dataFeito)}</span></div></div>`).join('')||'<div class="kb-final">Arraste para cá para concluir. Arraste de volta para reabrir.</div>'}</div></div>`;
+  return`<div class="kb-scroll"><div class="kb" style="min-width:0;width:100%">${ETAPAS.map(([id,l,col])=>{
     const cards=items.filter(o=>etapaOf(o.t)===id);
-    return`<div class="kb-col" style="width:320px"><div class="kb-col-h" style="border-left-color:${col}"><span class="t" style="color:${col}">${l}</span><span class="c">${cards.length}</span></div>
+    return`<div class="kb-col" style="flex:1 1 0;min-width:220px"><div class="kb-col-h" style="border-left-color:${col}"><span class="t" style="color:${col}">${l}</span><span class="c">${cards.length}</span></div>
     <div class="kb-drop pv-drop" data-etapa="${id}">${cards.map(o=>{const w=whenOf(o.t,o.d);return`<div class="pv-card" draggable="true" data-cid="${o.c.id}" data-tid="${o.t.id}">
       <div class="cli" onclick="${goItem(o.c)}" style="cursor:pointer">${esc(itemName(o.c))}</div>
       <div style="display:flex;gap:7px;align-items:flex-start"><input type="checkbox" class="task-chk" title="Concluir" onchange="toggleTask('${o.c.id}','${o.t.id}',this.checked)"><div class="tx">${esc(o.t.texto)}</div></div>
       <div class="mt">${chipTipo(o.t)}<span style="font-weight:700;color:${w.col}">${w.txt}</span><button class="star ${o.t.foco?'on':''}" onclick="toggleFoco('${o.c.id}','${o.t.id}')">${o.t.foco?'★':'☆'}</button></div>
     </div>`;}).join('')}</div></div>`;
-  }).join('')}</div></div>`;
+  }).join('')}${colFeitas}</div></div>`;
 }
 function wireProvBoard(){
   let drag=null;
@@ -2049,7 +2061,10 @@ function wireProvBoard(){
     drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
     drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');if(!drag)return;
       const c=findItem(drag.cid);const t=c&&(c.tarefas||[]).find(x=>x.id===drag.tid);
-      if(t&&etapaOf(t)!==drop.dataset.etapa){t.etapa=drop.dataset.etapa;saveData();render();}drag=null;});
+      const alvo=drop.dataset.etapa;
+      if(t&&alvo==='feito'&&!t.feito){toggleTask(c.id,t.id,true);}
+      else if(t&&alvo!=='feito'&&(t.feito||etapaOf(t)!==alvo)){if(t.feito){t.feito=false;t.dataFeito='';if(!c.historico)c.historico=[];c.historico.unshift({id:uid(),data:hojeISO(),texto:'Reaberta: '+t.texto});}t.etapa=alvo;saveData();render();}
+      drag=null;});
   });
 }
 
@@ -2087,7 +2102,7 @@ function taskRow(c,t){
     <input type="checkbox" class="task-chk" ${t.feito?'checked':''} onchange="toggleTask('${c.id}','${t.id}',this.checked)">
     <div class="task-c">
       <div class="task-txt" style="${t.feito?'text-decoration:line-through':''}">${esc(t.texto)}</div>
-      <div class="task-meta">${chipTipo(t)}${dateHtml}${t.data&&!t.feito?`<a href="${gcalTask(c,t)}" target="_blank" class="mini-cal" style="padding:1px 6px">Agenda</a>`:''}${subBtn}</div>
+      <div class="task-meta">${chipTipo(t)}${chipEtapa(t)}${dateHtml}${t.data&&!t.feito?`<a href="${gcalTask(c,t)}" target="_blank" class="mini-cal" style="padding:1px 6px">Agenda</a>`:''}${subBtn}</div>
       ${subList}
     </div>
     <div style="display:flex;gap:1px;flex-shrink:0;align-items:flex-start">${star}
@@ -2109,6 +2124,7 @@ function taskEditRow(c,t){
       <span style="display:flex;flex-direction:column;gap:2px"><span id="et-data-lbl-${t.id}" style="font-size:9px;color:var(--faint)">${l1}</span><input type="date" id="et-data-${t.id}" value="${t.data||''}" style="width:128px;${inp}"></span>
       <span id="et-x-wrap-${t.id}" style="display:${tem?'flex':'none'};flex-direction:column;gap:2px"><span id="et-x-lbl-${t.id}" style="font-size:9px;color:var(--faint)">${l2}</span><input type="date" id="et-x-${t.id}" value="${xval}" style="width:128px;${inp}"></span>
       <span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:9px;color:var(--faint)">hora</span><input type="time" id="et-hora-${t.id}" value="${t.hora||''}" style="width:96px;${inp}"></span>
+      ${meta.jud?'':`<span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:9px;color:var(--faint)">andamento</span><select id="et-etapa-${t.id}" style="${inp}">${ETAPAS.map(([id,l])=>`<option value="${id}" ${etapaOf(t)===id?'selected':''}>${l}</option>`).join('')}</select></span>`}
       <button class="btn btn-pri btn-sm" onclick="saveTaskEdit('${c.id}','${t.id}')">Salvar</button>
       <button class="btn btn-ghost btn-sm" onclick="cancelTaskEdit()">Cancelar</button>
     </div>
@@ -2127,6 +2143,7 @@ function saveTaskEdit(cid,tid){
   const tipo=gv('et-tipo-'+tid)||'tarefa';const x=gv('et-x-'+tid)||'';
   t.texto=txt;t.tipo=tipo;t.data=gv('et-data-'+tid)||'';t.hora=gv('et-hora-'+tid)||'';
   t.tipoLivre=tipo==='outro'?gv('et-livre-'+tid).trim():'';
+  const et=gv('et-etapa-'+tid);if(et)t.etapa=et;
   t.dataInicio=tipo==='prazo'?x:'';t.dataFim=tipo==='julg_virt'?x:'';
   _editTaskId=null;saveData();render();
 }

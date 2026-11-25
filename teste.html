@@ -431,6 +431,8 @@ details.next7[open]>summary{border-bottom:1px solid var(--line);}
 .md-row-next{font-size:11.5px;color:var(--ink-soft);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .conv-btn{font-size:11px;padding:4px 10px;}
 .md-detail.open .dt-head{padding-right:118px;}
+.kb{width:100%;}
+.kb-col{flex:1 1 0;min-width:180px;width:auto !important;}
 </style>
 </head>
 <body>
@@ -905,7 +907,7 @@ function bCasos(){
   if(view==='kanban'){
     const cols=CASO_COLS;
     return bar+`<div class="kb-scroll"><div class="kb">${cols.map(col=>{
-      const cards=sortC(list.filter(c=>c.status===col.id));
+      const cards=sortC(list.filter(c=>statusEf(c)===col.id));
       return`<div class="kb-col"><div class="kb-col-h" style="border-left-color:${col.color}"><span class="t" style="color:${col.color}">${col.label}</span><span class="c">${cards.length}</span></div>
       <div class="kb-drop" data-status="${col.id}">${cards.map(c=>kbCard(c)).join('')||''}</div></div>`;
     }).join('')}</div></div>`;
@@ -973,7 +975,7 @@ function caseDetail(c){
     <div>
       <div class="dt-name">${c.client}</div>
       <div class="dt-meta">
-        <span class="badge ${sBadge(c.status)}">${sLabel(c.status)}</span>
+        <span class="badge ${sBadge(statusEf(c))}">${sLabel(statusEf(c))}</span>
         <span>${c.type==='consultivo'?'Consultivo':'Judicial'}</span>
         ${c.tribunal?`<span>·</span><span>${tUrl?`<a href="${tUrl}" target="_blank">${c.tribunal} ↗</a>`:c.tribunal}</span>`:''}
         ${c.processNumber?`<span>·</span><span class="mono">${c.processNumber}</span>`:''}
@@ -2230,7 +2232,7 @@ function casoForm(c){
   <div class="fg"><label>Tribunal</label><select id="fi-tr"><option value="">Nenhum</option>${Object.keys(TRIBUNAIS).map(t=>`<option value="${t}" ${c&&c.tribunal===t?'selected':''}>${t}</option>`).join('')}</select></div>
   <div class="fg"><label>Número do processo</label><input id="fi-p" value="${esc(c?c.processNumber:'')}"></div>
   <div class="fg full"><label>Assunto</label><input id="fi-s" value="${esc(c?c.subject:'')}"></div>
-  <div class="fg"><label>Status</label><select id="fi-st">${['em_andamento','aguardando','liminar','recurso','encerrado'].map(s=>`<option value="${s}" ${c&&c.status===s?'selected':''}>${sLabel(s)}</option>`).join('')}</select></div>
+  <div class="fg"><label>Status</label><select id="fi-st">${STATUS_V2.filter(s=>!s.auto).map(s=>`<option value="${s.id}" ${(c?(STATUS_ANTIGO[c.status]||c.status):'a_iniciar')===s.id?'selected':''}>${s.label}</option>`).join('')}</select></div>
   <div class="fg"></div>
   ${c?'':`<div class="fg"><label>Prazo judicial: abertura (opcional)</label><input id="fi-di" type="date"></div>
   <div class="fg"><label>Prazo judicial: data fatal (opcional)</label><input id="fi-d" type="date"></div>`}
@@ -2282,7 +2284,9 @@ function wireKanban(type){
     drop.addEventListener('drop',e=>{
       e.preventDefault();drop.classList.remove('over');
       const ns=drop.dataset.status;if(!_dragId)return;
-      if(type==='caso'){const c=S.casos.find(x=>x.id===_dragId);if(c&&c.status!==ns){c.status=ns;saveData();render();}}
+      if(type==='caso'){const c=S.casos.find(x=>x.id===_dragId);
+        if(ns==='em_pauta'){toast('Em pauta é automático: lance o julgamento (presencial ou virtual) na ficha do caso.');}
+        else if(c&&c.status!==ns){c.status=ns;saveData();render();if(emPauta(c))toast('Status salvo, mas o caso segue em "Em pauta" enquanto houver julgamento pendente.');}}
       else{const p=S.prospeccao.find(x=>x.id===_dragId);if(p&&p.stage!==ns){setStage(p,ns);saveData();render();}}
       _dragId=null;
     });
@@ -2362,6 +2366,7 @@ prospecção: [nome] → followup: 20/06/2026</pre>
 <p style="font-size:11px;color:var(--muted);margin-top:10px"><b>tipos de trabalho:</b> tarefa · examinar documentos · elaborar peça · elaborar documento · reunião · ligação · cobrar retorno · ou qualquer outro nome (vira "Outro" com esse nome).</p>
 <p style="font-size:11px;color:var(--muted);margin-top:4px"><b>tipos judiciais:</b> prazo · julgamento presencial · julgamento virtual · audiência · despacho.</p>
 <p style="font-size:11px;color:var(--muted);margin-top:4px"><b>hoje:</b> marca a providência com ★ para aparecer no Painel de hoje.</p>
+<p style="font-size:11px;color:var(--muted);margin-top:4px"><b>status do caso:</b> a iniciar · em elaboração · aguardando terceiro · aguardando decisão · acompanhamento · encerrado. "Em pauta" é automático quando há julgamento lançado.</p>
 <p style="font-size:11px;color:var(--muted);margin-top:4px"><b>etapas da prospecção:</b> fazer contato · aguardando documentos · examinar documentos · elaborar proposta · aguardando retorno · contratou · não contratou. Cada mudança de etapa cria a providência correspondente.</p>`;
 }
 
@@ -2404,7 +2409,7 @@ function caseRow(c){
   const nt=jt||pend[0]||null;const d=nt?daysTo(nt.data):null;
   let cls='dd-ok';if(d!==null){if(d<0)cls='dd-over';else if(jt&&d<=7)cls='dd-jud';else if(d<=7)cls='dd-urg';}
   const nPend=pendTasks(c).length;
-  const meta=[c.type==='consultivo'?'Consultivo':(c.tribunal||'Judicial'),c.processNumber||'',c.status!=='em_andamento'?sLabel(c.status):'',nPend?nPend+' pendente'+(nPend>1?'s':''):''].filter(Boolean).join(' · ');
+  const meta=[c.type==='consultivo'?'Consultivo':(c.tribunal||'Judicial'),c.processNumber||'',sLabel(statusEf(c)),nPend?nPend+' pendente'+(nPend>1?'s':''):''].filter(Boolean).join(' · ');
   return`<div class="md-row ${sel?'sel':''} ${hasJud?'has-jud':''}" onclick="selectCaso('${c.id}')">
     <div class="md-row-bar"></div>
     <div class="md-row-c"><div class="md-row-name">${esc(c.client)}</div><div class="md-row-meta">${esc(meta)}</div>
@@ -2425,6 +2430,40 @@ function prospRow(p){
     ${nt?`<div class="md-row-r"><span class="md-row-days ${d<0?'dd-over':d<=7?'dd-urg':'dd-ok'}">${relDias(d)}</span><span class="md-row-date">${fDiaSem(nt.data)}</span></div>`
       :fu!==null?`<div class="md-row-r"><span class="md-row-days ${fu<=0?'dd-over':'dd-ok'}">follow-up</span><span class="md-row-date">${fDiaSem(p.followupDate)}</span></div>`:''}
   </div>`;
+}
+
+// ── status dos casos: "com quem está a bola" ───────────
+const STATUS_V2=[
+  {id:'a_iniciar',label:'A iniciar',color:'var(--muted)',badge:'b-muted'},
+  {id:'em_elaboracao',label:'Em elaboração',color:'var(--blu)',badge:'b-info'},
+  {id:'aguardando',label:'Aguardando terceiro',color:'var(--ora)',badge:'b-warn'},
+  {id:'aguardando_decisao',label:'Aguardando decisão',color:'var(--car)',badge:'b-muted'},
+  {id:'em_pauta',label:'Em pauta',color:'var(--jud)',badge:'b-danger',auto:true},
+  {id:'acompanhamento',label:'Acompanhamento',color:'#0f766e',badge:'b-muted'},
+  {id:'encerrado',label:'Encerrado',color:'var(--grn)',badge:'b-success'},
+];
+const STATUS_ANTIGO={em_andamento:'em_elaboracao',liminar:'aguardando_decisao',recurso:'aguardando_decisao'};
+CASO_COLS.splice(0,CASO_COLS.length,...STATUS_V2.map(s=>({id:s.id,label:s.label,color:s.color})));
+function sLabel(s){const x=STATUS_V2.find(y=>y.id===(STATUS_ANTIGO[s]||s));return x?x.label:(s||'Em elaboração');}
+function sBadge(s){const x=STATUS_V2.find(y=>y.id===(STATUS_ANTIGO[s]||s));return x?x.badge:'b-muted';}
+function emPauta(c){return c.status!=='encerrado'&&pendTasks(c).some(t=>t.tipo==='julg_pres'||t.tipo==='julg_virt');}
+function statusEf(c){return emPauta(c)?'em_pauta':(STATUS_ANTIGO[c.status]||c.status||'em_elaboracao');}
+const _migrateV1=migrate;
+migrate=function(){
+  let ch=_migrateV1();
+  S.casos.forEach(c=>{if(STATUS_ANTIGO[c.status]){if(!c.statusAnterior)c.statusAnterior=c.status;c.status=STATUS_ANTIGO[c.status];ch=true;}});
+  return ch;
+};
+function applyC(c,field,value){
+  if(applyTaskLike(c,field,value))return;
+  const sm={'a iniciar':'a_iniciar','em elaboração':'em_elaboracao','em elaboracao':'em_elaboracao',elaboração:'em_elaboracao','em andamento':'em_elaboracao',andamento:'em_elaboracao',
+    'aguardando terceiro':'aguardando',aguardando:'aguardando','aguardando decisão':'aguardando_decisao','aguardando decisao':'aguardando_decisao',concluso:'aguardando_decisao',
+    acompanhamento:'acompanhamento',encerrado:'encerrado'};
+  const fm={status:'status',nextsteps:'nextSteps',providencias:'nextSteps','providências':'nextSteps',resumo:'nextSteps',processnumber:'processNumber',processo:'processNumber',subject:'subject',assunto:'subject',tribunal:'tribunal'};
+  const f=fm[field]||field;
+  if(f==='status'){const v=sm[value.toLowerCase()];if(v)c.status=v;}
+  else if(field==='deadline'||field==='prazo'){c.tarefas.push({id:uid(),texto:'Prazo judicial',tipo:'prazo',data:parseDate(value),dataInicio:'',dataFim:'',hora:'',feito:false,dataFeito:''});}
+  else if(f in c)c[f]=value;
 }
 
 window.addEventListener('resize',setTop);

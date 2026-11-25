@@ -90,7 +90,7 @@ a{color:var(--blu);text-decoration:none;}a:hover{text-decoration:underline;}
 .sec-title{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.3px;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
 .sec-hint{font-size:10.5px;color:var(--faint);font-weight:400;}
 
-/* ── PRAZO JUDICIAL — carimbo ───────────────── */
+/* ── PRAZO JUDICIAL · carimbo ───────────────── */
 .jud-stamp{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;letter-spacing:.7px;color:var(--jud);background:var(--jud-bg);border:1px solid var(--jud-b);padding:2px 7px;border-radius:4px;text-transform:uppercase;}
 
 /* ── DASHBOARD timeline ─────────────────────── */
@@ -312,6 +312,181 @@ pre{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);
   .mets{grid-template-columns:1fr 1fr;}
 }
 </style>
+<style>
+/* ══ V2: menu lateral, painel do dia, providências ══ */
+:root{--side:224px;--pur:#7c3aed;--pur-bg:#f2eefb;--pur-b:#d3c2f5;}
+@media(min-width:901px){
+  #tabs{position:fixed;left:0;bottom:0;width:var(--side);flex-direction:column;align-items:stretch;gap:2px;
+    border:none;border-right:1px solid var(--line);background:#f6f5f1;padding:16px 12px 24px;margin:0;overflow-y:auto;z-index:50;}
+  #app{margin-left:var(--side);max-width:none;padding-left:28px;padding-right:28px;}
+}
+.nav-brand{font-size:11px;font-weight:700;letter-spacing:.6px;color:var(--faint);text-transform:uppercase;padding:2px 10px 10px;}
+.nav-item{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:none;background:transparent;border-radius:9px;
+  font-family:inherit;font-size:14px;font-weight:600;color:var(--ink-soft);cursor:pointer;text-align:left;white-space:nowrap;}
+.nav-item:hover{background:#ebe9e2;}
+.nav-item.on{background:#fff;color:var(--ink);box-shadow:var(--sh);}
+.nav-ic{width:20px;text-align:center;font-size:15px;flex-shrink:0;}
+.nav-lbl{flex:1;}
+.nav-cnt{font-size:11px;font-weight:700;background:var(--paper2);color:var(--muted);border-radius:10px;padding:0 7px;line-height:18px;}
+.nav-item.on .nav-cnt{background:var(--ink);color:#fff;}
+.nav-cnt.hot{background:var(--red);color:#fff;}
+.nav-sub{display:flex;align-items:center;width:100%;padding:7px 12px 7px 42px;border:none;background:transparent;border-radius:7px;
+  font-family:inherit;font-size:12.5px;color:var(--muted);cursor:pointer;text-align:left;}
+.nav-sub:hover{color:var(--ink);background:#ebe9e2;}
+.nav-sub.on{color:var(--ink);font-weight:700;}
+.nav-sep{height:1px;background:var(--line);margin:10px 6px;}
+@media(max-width:900px){.nav-sub,.nav-brand,.nav-sep{display:none;}.nav-item{width:auto;padding:9px 12px;font-size:13px;}.nav-ic{display:none;}}
+
+.teste-band{background:#fff4d6;border:1px solid #f0d58a;color:#7a5200;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:600;margin-bottom:14px;}
+
+/* toast */
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:10px;
+  font-size:12.5px;box-shadow:var(--sh2);z-index:400;display:none;max-width:90vw;}
+
+/* painel do dia */
+.dash{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:26px;align-items:start;}
+@media(max-width:1100px){.dash{grid-template-columns:1fr;}}
+.blk{margin-bottom:26px;}
+.blk-h{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
+.blk-h h2{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-.2px;}
+.blk-h .hint{font-size:11.5px;color:var(--faint);}
+.blk-h .n{font-size:11px;font-weight:700;border-radius:10px;padding:0 8px;line-height:19px;}
+.today-card{background:#fff;border:1px solid var(--line);border-radius:var(--rl);box-shadow:var(--sh);overflow:hidden;}
+.dr{display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid var(--line);}
+.dr:last-child{border-bottom:none;}
+.dr:hover{background:#fbfaf7;}
+.dr.over{background:#fdf5f4;}
+.dr-chk{width:18px;height:18px;accent-color:var(--grn);cursor:pointer;flex-shrink:0;}
+.dr-c{flex:1;min-width:0;}
+.dr-txt{font-size:13.5px;font-weight:600;color:var(--text);line-height:1.35;}
+.dr-meta{font-size:11.5px;color:var(--muted);margin-top:2px;display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+.dr-cli{color:var(--blu);cursor:pointer;font-weight:600;}
+.dr-cli:hover{text-decoration:underline;}
+.dr-when{font-size:12px;font-weight:700;white-space:nowrap;text-align:right;flex-shrink:0;}
+.chip{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:600;padding:1px 8px;border-radius:11px;border:1px solid transparent;white-space:nowrap;}
+.star{background:none;border:none;cursor:pointer;font-size:16px;line-height:1;color:#c9c4b5;padding:0 2px;flex-shrink:0;}
+.star.on{color:#e0a100;}
+.star:hover{color:#e0a100;}
+.empty-ok{padding:18px;font-size:12.5px;color:var(--grn);background:var(--grn-bg);border:1px solid var(--grn-b);border-radius:var(--rl);}
+details.next7{background:#fff;border:1px solid var(--line);border-radius:var(--rl);box-shadow:var(--sh);}
+details.next7>summary{cursor:pointer;padding:12px 14px;font-size:13px;font-weight:700;color:var(--ink-soft);list-style:none;display:flex;gap:8px;align-items:center;}
+details.next7>summary::-webkit-details-marker{display:none;}
+details.next7[open]>summary{border-bottom:1px solid var(--line);}
+.side-card{background:#fff;border:1px solid var(--line);border-radius:var(--rl);padding:14px 16px;box-shadow:var(--sh);margin-bottom:14px;}
+.side-card h3{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;margin-bottom:10px;}
+.stat{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px;cursor:pointer;}
+.stat:last-child{border-bottom:none;}
+.stat b{font-size:15px;}
+.stat:hover{color:var(--blu);}
+
+/* providências */
+.pv-add{display:flex;gap:7px;flex-wrap:wrap;align-items:center;background:#fff;border:1px solid var(--line);border-radius:var(--rl);padding:12px 14px;box-shadow:var(--sh);margin-bottom:16px;}
+.pv-add select,.pv-add input{padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-family:inherit;font-size:12.5px;background:#fff;outline:none;}
+.pv-add .grow{flex:1;min-width:180px;}
+.pv-group{background:#fff;border:1px solid var(--line);border-radius:var(--rl);box-shadow:var(--sh);margin-bottom:10px;overflow:hidden;}
+.pv-gh{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;user-select:none;}
+.pv-gh:hover{background:#fbfaf7;}
+.pv-caret{width:14px;color:var(--faint);font-size:11px;}
+.pv-name{font-size:14px;font-weight:700;color:var(--ink);}
+.pv-cnt{font-size:11px;font-weight:700;background:var(--paper2);color:var(--muted);border-radius:10px;padding:0 8px;line-height:19px;}
+.pv-body{padding:4px 12px 10px;border-top:1px solid var(--line);}
+.pv-body .task{margin-top:6px;}
+.pv-gadd{display:flex;gap:6px;margin-top:8px;}
+.pv-gadd input{flex:1;padding:7px 10px;border:1px dashed var(--line2);border-radius:var(--r);font-family:inherit;font-size:12px;outline:none;background:var(--paper);}
+.pv-gadd input:focus{border-style:solid;border-color:var(--ink);background:#fff;}
+.pv-card{background:#fff;border:1px solid var(--line);border-radius:var(--rl);padding:10px 12px;margin-bottom:7px;box-shadow:var(--sh);cursor:grab;}
+.pv-card .cli{font-size:10.5px;font-weight:700;color:var(--blu);margin-bottom:3px;}
+.pv-card .tx{font-size:12.5px;font-weight:600;line-height:1.35;}
+.pv-card .mt{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap;font-size:10.5px;color:var(--muted);}
+.kb-final{font-size:11px;color:var(--faint);text-align:center;padding:18px 8px;border:1px dashed var(--line2);border-radius:var(--rl);}
+
+/* subitens */
+.sub-btn{font-size:10.5px;font-weight:600;color:var(--muted);background:var(--paper2);border:1px solid var(--line2);border-radius:11px;padding:1px 8px;cursor:pointer;font-family:inherit;}
+.sub-btn:hover{color:var(--ink);}
+.sub-btn.done{color:var(--grn);background:var(--grn-bg);border-color:var(--grn-b);}
+.sub-list{margin-top:7px;padding:6px 0 2px 2px;border-top:1px dashed var(--line2);}
+.sub-it{display:flex;align-items:center;gap:7px;padding:3px 0;font-size:12px;}
+.sub-it input[type=checkbox]{width:14px;height:14px;accent-color:var(--grn);cursor:pointer;}
+.sub-it.ok span{text-decoration:line-through;color:var(--muted);}
+.sub-new{display:flex;gap:5px;margin-top:4px;}
+.sub-new input{flex:1;padding:4px 8px;border:1px solid var(--line2);border-radius:6px;font-family:inherit;font-size:11.5px;outline:none;}
+.task-time{font-weight:700;color:var(--ink);}
+
+.kb-col{width:236px;}
+
+/* lista em tela cheia + ficha em painel lateral */
+.md{grid-template-columns:1fr !important;}
+.md-list{position:static !important;max-height:none !important;}
+.md-detail{display:none;}
+.md-detail.open{display:block;position:fixed;top:var(--topH,34px);right:0;bottom:0;width:min(840px,66vw);z-index:120;overflow-y:auto;border-radius:0;border:none;box-shadow:-12px 0 44px rgba(27,42,74,.2);}
+.drawer-bg{position:fixed;inset:0;background:rgba(20,28,48,.26);z-index:110;}
+.drawer-x{position:sticky;top:10px;float:right;margin:10px 14px 0 0;z-index:2;background:#fff;border:1px solid var(--line2);border-radius:var(--r);padding:6px 11px;font-family:inherit;font-size:12px;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+.drawer-x:hover{background:var(--paper2);}
+.back-mobile{display:none !important;}
+@media(max-width:900px){.md-detail.open{width:100vw;}}
+.md-row{padding:12px 18px;}
+.md-row-name{font-size:14px;}
+.md-row-meta{font-size:11.5px;}
+.md-row-date{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;}
+.md-row-next{font-size:11.5px;color:var(--ink-soft);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.conv-btn{font-size:11px;padding:4px 10px;}
+.md-detail.open .dt-head{padding-right:118px;}
+.kb{width:100%;}
+.kb-col{flex:1 1 0;min-width:180px;width:auto !important;}
+/* quadros cabem na tela, sem rolagem lateral */
+.kb-scroll{overflow-x:visible;}
+.kb{min-width:0 !important;gap:8px;}
+.kb-col{min-width:0 !important;}
+.kb-col-h{padding:7px 9px;}
+.kb-col-h .t{white-space:normal;line-height:1.25;font-size:10.5px;}
+.kb-card{padding:9px 10px;}
+.kb-card-name,.kb-card-meta{white-space:normal;overflow-wrap:anywhere;}
+@media(max-width:900px){.kb-scroll{overflow-x:auto;}.kb{min-width:min-content !important;}.kb-col{min-width:200px !important;}}
+@media(min-width:901px){
+  .kb-scroll{overflow-x:visible;}
+  .kb{gap:8px;min-width:0 !important;}
+  .kb-col{min-width:0 !important;}
+  .kb-col-h{padding:7px 9px;}
+  .kb-col-h .t{font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .kb-card,.pv-card{padding:9px 10px;}
+  .kb-col:has(.kb-final){flex:.55 1 0;}
+}
+@media(min-width:901px){
+  .kb-col-h .t{white-space:normal;overflow:visible;line-height:1.25;}
+  .kb-col-h{align-items:center;min-height:38px;}
+  .kb-col:has(.kb-final){flex:.75 1 0;}
+}
+/* honorários v2 */
+.hb{border:1px solid var(--line);border-radius:var(--r);background:var(--paper);padding:11px 13px;margin-bottom:8px;}
+.hb-h{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;}
+.hb-t{font-size:12.5px;font-weight:700;color:var(--ink);}
+.hb-s{font-size:11px;color:var(--muted);margin-top:1px;}
+.hb-act{display:flex;gap:5px;align-items:center;flex-shrink:0;}
+.hb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-top:9px;}
+.hb-grid div{background:#fff;border:1px solid var(--line);border-radius:6px;padding:6px 9px;}
+.hb-grid span{display:block;font-size:9.5px;color:var(--faint);font-weight:600;}
+.hb-grid b{font-size:12.5px;}
+.hb-parc{font-size:11px;color:var(--car);margin-top:7px;font-weight:600;}
+.hb-pl{margin-top:8px;display:flex;flex-direction:column;gap:3px;}
+.hb-p{display:flex;align-items:center;gap:8px;font-size:11.5px;padding:5px 8px;border-radius:6px;background:#fff;border:1px solid var(--line);cursor:pointer;}
+.hb-p input{accent-color:var(--grn);width:14px;height:14px;}
+.hb-p .d{flex:1;}.hb-p .v{color:var(--muted);font-size:10.5px;}
+.hb-p.ok{background:var(--grn-bg);border-color:var(--grn-b);}.hb-p.ok .d{text-decoration:line-through;color:var(--grn);}
+.hb-p.late{background:var(--red-bg);border-color:var(--red-b);}.hb-p.late .v{color:var(--red);font-weight:600;}
+.hb-warn{font-size:11px;color:var(--ora);margin-top:6px;font-weight:600;}
+.hb-obs{font-size:11px;color:var(--muted);font-style:italic;margin-top:6px;}
+.hc-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:-4px -6px 10px;padding:6px;border-radius:8px;cursor:pointer;}
+.hc-head:hover{background:#fbfaf7;}
+.hc-next{font-size:11.5px;color:var(--ora);background:var(--ora-bg);border:1px solid var(--ora-b);border-radius:6px;padding:6px 10px;margin-bottom:8px;font-weight:600;}
+.hm-b{border:1px solid var(--line2);border-radius:var(--rl);padding:12px 14px;margin-bottom:12px;background:#fcfbf8;}
+.hm-bh{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.hm-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:6px;}
+.hm-lbl{font-size:11.5px;color:var(--muted);display:inline-flex;align-items:center;gap:4px;}
+.hm-sub{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line2);}
+.hm-sub-h{display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--ink-soft);}
+.hm-note{font-size:11px;margin-top:5px;font-weight:600;}
+.dsp{display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r);margin-bottom:6px;background:#fff;}
+</style>
 </head>
 <body>
 
@@ -482,7 +657,7 @@ function judTasks(c){return pendTasks(c).filter(t=>isJud(t.tipo)&&t.data);}
 // menor data judicial pendente (data = data de contagem)
 function nextPrazo(c){const j=judTasks(c).map(t=>t.data).filter(Boolean).sort();return j[0]||null;}
 function hasPrazoUrg(c){const p=nextPrazo(c);if(!p)return false;const d=daysTo(p);return d!==null&&d<=7;}
-// campo legado c.deadline foi aposentado — tudo vem das tarefas judiciais
+// campo legado c.deadline foi aposentado · tudo vem das tarefas judiciais
 
 function getPago(h){const p=h.parcelas||[];if(p.length>0)return p.filter(x=>x.pago).reduce((s,x)=>s+(x.valor||0),0);return h.pago||0;}
 function getProximaParcelaAberta(h){const p=[...(h.parcelas||[])].sort((a,b)=>(a.vencimento||'zz').localeCompare(b.vencimento||'zz'));return p.find(x=>!x.pago)||null;}
@@ -518,7 +693,7 @@ function gcalWindow(title,inicio,fatal,details){
   const d=inicio.replace(/-/g,'');
   const nx=new Date(fatal+'T12:00:00');nx.setDate(nx.getDate()+1);
   const end=nx.toISOString().slice(0,10).replace(/-/g,'');
-  const det=(details?details+' — ':'')+'Janela: '+fDate(inicio)+' até '+fDate(fatal)+' (data fatal)';
+  const det=(details?details+' · ':'')+'Janela: '+fDate(inicio)+' até '+fDate(fatal)+' (data fatal)';
   return'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent('[Escritório] '+title)+'&dates='+d+'/'+end+'&details='+encodeURIComponent(det);
 }
 
@@ -565,9 +740,9 @@ function applyUpdate(){
     }
   }
   if(ok>0){saveData();render();showFb(ok+' atualização'+(ok>1?'ões':'')+' aplicada'+(ok>1?'s':''));document.getElementById('ucmd').value='';}
-  else showFb('Nenhuma atualização'+(errs.length?' — não encontrado: '+errs[0]:''),true);
+  else showFb('Nenhuma atualização'+(errs.length?' · não encontrado: '+errs[0]:''),true);
 }
-// frentes/baixa/histórico — compartilhado entre caso e prospecção
+// frentes/baixa/histórico · compartilhado entre caso e prospecção
 function applyTaskLike(c,field,value){
   if(!c.tarefas)c.tarefas=[];if(!c.historico)c.historico=[];
   if(field==='tarefa'){
@@ -584,7 +759,7 @@ function applyTaskLike(c,field,value){
     const tipo=tipoMap[tipoRaw]||'tarefa';
     let data='',dataInicio='',dataFim='';
     if(parts[2]){
-      const rng=parts[2].split(/\s+(?:a|até|-|—|→)\s+/);
+      const rng=parts[2].split(/\s+(?:a|até|-|-|→)\s+/);
       if(rng.length===2){const d1=parseDate(rng[0].trim()),d2=parseDate(rng[1].trim());if(tipo==='julg_virt'){data=d1;dataFim=d2;}else{dataInicio=d1;data=d2;}}
       else data=parseDate(parts[2]);
     }
@@ -669,9 +844,9 @@ function bDash(){
     const janP=tk.tipo==='prazo'&&tk.dataInicio, janJ=tk.tipo==='julg_virt'&&tk.dataFim;
     const janela=janP?`<span style="color:${meta.color};font-weight:600">abre ${fDateShort(tk.dataInicio)} → fatal ${fDateShort(tk.data)}</span> · `
       :janJ?`<span style="color:${meta.color};font-weight:600">sessão ${fDateShort(tk.data)} → ${fDateShort(tk.dataFim)}</span> · `:'';
-    const cal=janP?gcalWindow(nome+' — '+tk.texto,tk.dataInicio,tk.data,proc)
-      :janJ?gcalWindow(nome+' — '+tk.texto,tk.data,tk.dataFim,proc)
-      :gcalLink(nome+' — '+tk.texto,tk.data,proc);
+    const cal=janP?gcalWindow(nome+' · '+tk.texto,tk.dataInicio,tk.data,proc)
+      :janJ?gcalWindow(nome+' · '+tk.texto,tk.data,tk.dataFim,proc)
+      :gcalLink(nome+' · '+tk.texto,tk.data,proc);
     const barCol=over?'var(--red)':meta.color;
     const itemBg=over?'background:var(--red-bg);border-color:var(--red-b);':meta.bg?`background:${meta.bg};border-color:${meta.bd};`:'';
     return`<div class="tl-item" style="border-left:4px solid ${barCol};${itemBg}" onclick="${isP?'goProsp':'goCaso'}('${c.id}')">
@@ -687,7 +862,7 @@ function bDash(){
     </div>`;
   }).join(''):`<div class="empty" style="padding:22px"><div class="big">Nenhum ato judicial pendente</div>Você está em dia com prazos, julgamentos e audiências.</div>`;
 
-  // ── outras tarefas com data (não judiciais) de casos e prospecções + honorários — 60d
+  // ── outras tarefas com data (não judiciais) de casos e prospecções + honorários · 60d
   const outros=[];
   const pushTasks=(item,isP)=>pendTasks(item).forEach(tk=>{
     if(isJud(tk.tipo)||!tk.data)return;const d=daysTo(tk.data);if(d>60)return;
@@ -700,10 +875,10 @@ function bDash(){
   const outrosHtml=outros.length?outros.map(o=>{
     const over=o.d<0,urg=o.d>=0&&o.d<=7;const cls=over?'tl-overdue':urg?'tl-urgent':o.kind==='hon'?'tl-honor':'tl-near';
     if(o.kind==='hon'){
-      return`<div class="tl-item ${cls}" onclick="goCaso('${o.it.casoId}')"><div class="tl-bar"></div><div class="tl-c"><div class="tl-lbl">Honorário — ${o.it.tipo==='proLabore'?'pro-labore':'êxito'}</div><div class="tl-main">${o.it.client}</div><div class="tl-sub">${fCur(o.it.parcela.valor)}${o.it.parcela.descricao?' · '+o.it.parcela.descricao:''}</div></div><div class="tl-r"><div class="tl-days">${over?'atr.':o.d===0?'hoje':o.d+'d'}</div></div></div>`;
+      return`<div class="tl-item ${cls}" onclick="goCaso('${o.it.casoId}')"><div class="tl-bar"></div><div class="tl-c"><div class="tl-lbl">Honorário · ${o.it.tipo==='proLabore'?'pro-labore':'êxito'}</div><div class="tl-main">${o.it.client}</div><div class="tl-sub">${fCur(o.it.parcela.valor)}${o.it.parcela.descricao?' · '+o.it.parcela.descricao:''}</div></div><div class="tl-r"><div class="tl-days">${over?'atr.':o.d===0?'hoje':o.d+'d'}</div></div></div>`;
     }
     const m2=TASK_TIPOS[o.tk.tipo]||TASK_TIPOS.tarefa;const nome=itemName(o.c);
-    return`<div class="tl-item ${cls}" onclick="${o.isP?'goProsp':'goCaso'}('${o.c.id}')"><div class="tl-bar"></div><div class="tl-c"><div class="tl-lbl">${m2.icon} ${m2.short}${o.isP?' · <span style="color:var(--faint)">prospecção</span>':''}</div><div class="tl-main">${nome}</div><div class="tl-sub">${esc(o.tk.texto)}</div></div><div class="tl-r"><div class="tl-days">${over?'atr.':o.d===0?'hoje':o.d+'d'}</div><a href="${gcalLink(nome+' — '+o.tk.texto,o.tk.data,'')}" target="_blank" onclick="event.stopPropagation()" class="mini-cal">Agenda</a></div></div>`;
+    return`<div class="tl-item ${cls}" onclick="${o.isP?'goProsp':'goCaso'}('${o.c.id}')"><div class="tl-bar"></div><div class="tl-c"><div class="tl-lbl">${m2.icon} ${m2.short}${o.isP?' · <span style="color:var(--faint)">prospecção</span>':''}</div><div class="tl-main">${nome}</div><div class="tl-sub">${esc(o.tk.texto)}</div></div><div class="tl-r"><div class="tl-days">${over?'atr.':o.d===0?'hoje':o.d+'d'}</div><a href="${gcalLink(nome+' · '+o.tk.texto,o.tk.data,'')}" target="_blank" onclick="event.stopPropagation()" class="mini-cal">Agenda</a></div></div>`;
   }).join(''):`<p style="font-size:12px;color:var(--muted);padding:4px">Nada agendado nos próximos 60 dias.</p>`;
 
   // ── tarefas sem data (a fazer) agrupadas por caso
@@ -718,7 +893,7 @@ function bDash(){
 
   return`
 <div style="margin-bottom:22px">
-  <div class="sec-title">⚖ Prazos e atos judiciais <span class="sec-hint">— prioridade máxima · clique para abrir o caso</span></div>
+  <div class="sec-title">⚖ Prazos e atos judiciais <span class="sec-hint">- prioridade máxima · clique para abrir o caso</span></div>
   <div class="tl">${judHtml}</div>
 </div>
 
@@ -728,7 +903,7 @@ function bDash(){
     <div class="tl">${outrosHtml}</div>
   </div>
   <div>
-    <div class="sec-title">Prospecção — propostas e aguardando <span class="sec-hint">${propostas.length}</span></div>
+    <div class="sec-title">Prospecção · propostas e aguardando <span class="sec-hint">${propostas.length}</span></div>
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px">
       ${propostas.length?propostas.map(p=>{const sc=STAGE_COLOR[p.stage]||STAGE_COLOR.fazer_contato;const lbl=(STAGES.find(s=>s.id===p.stage)||{}).label||p.stage;const fuV=p.followupDate&&daysTo(p.followupDate)<=0;return`<div class="tl-item" style="padding:9px 13px;border-left:4px solid ${sc.fg}" onclick="goProsp('${p.id}')"><div class="tl-c"><div class="tl-lbl" style="color:${sc.fg}">${lbl}</div><div class="tl-main" style="font-size:12.5px">${p.name}</div>${p.subject?`<div class="tl-sub">${esc(p.subject)}</div>`:''}</div>${p.followupDate?`<div class="tl-r"><span style="font-size:10.5px;font-weight:600;color:${fuV?'var(--red)':'var(--ora)'}">${fuV?'follow-up!':fDateShort(p.followupDate)}</span></div>`:''}</div>`;}).join(''):`<p style="font-size:12px;color:var(--muted)">Nenhuma proposta em elaboração ou aguardando retorno.</p>`}
     </div>
@@ -770,7 +945,7 @@ function casoFilterList(){
 function bCasos(){
   const list=sortC(casoFilterList());
   // seleção default = primeiro da lista
-  if(!S.selCaso||!list.find(c=>c.id===S.selCaso)){S.selCaso=list.length?list[0].id:null;}
+  if(S.selCaso&&!S.casos.find(c=>c.id===S.selCaso))S.selCaso=null;
   const view=S.casosView||'lista';
 
   const FILTERS=[{id:'ativos',label:'Ativos'},{id:'todos',label:'Todos'},{id:'prazos',label:'⚖ Com prazo'},{id:'judicial',label:'Judiciais'},{id:'consultivo',label:'Consultivos'}];
@@ -785,7 +960,7 @@ function bCasos(){
   if(view==='kanban'){
     const cols=CASO_COLS;
     return bar+`<div class="kb-scroll"><div class="kb">${cols.map(col=>{
-      const cards=sortC(list.filter(c=>c.status===col.id));
+      const cards=sortC(list.filter(c=>statusEf(c)===col.id));
       return`<div class="kb-col"><div class="kb-col-h" style="border-left-color:${col.color}"><span class="t" style="color:${col.color}">${col.label}</span><span class="c">${cards.length}</span></div>
       <div class="kb-drop" data-status="${col.id}">${cards.map(c=>kbCard(c)).join('')||''}</div></div>`;
     }).join('')}</div></div>`;
@@ -800,8 +975,8 @@ function bCasos(){
       <div class="md-search"><input placeholder="Buscar caso, cliente, processo…" value="${esc(S.search)}" oninput="S.search=this.value;rerenderCasos()"></div>
       <div class="md-rows">${list.length?list.map(c=>caseRow(c)).join(''):`<div class="empty" style="padding:26px">Nenhum caso neste filtro.</div>`}</div>
     </div>
-    <div class="md-detail ${hideDetail}">
-      <button class="back-mobile" onclick="S.mobileDetail=false;render()">‹ Voltar à lista</button>
+    ${sel?`<div class="drawer-bg" onclick="fecharFicha()"></div>`:''}<div class="md-detail ${hideDetail} ${sel?'open':''}">
+      <button class="drawer-x" onclick="fecharFicha()" title="Fechar (Esc)">× Fechar</button>
       ${sel?caseDetail(sel):`<div class="empty" style="padding:60px"><div class="big">Selecione um caso</div>Escolha um caso na lista para ver os detalhes.</div>`}
     </div>
   </div>`;
@@ -853,7 +1028,7 @@ function caseDetail(c){
     <div>
       <div class="dt-name">${c.client}</div>
       <div class="dt-meta">
-        <span class="badge ${sBadge(c.status)}">${sLabel(c.status)}</span>
+        <span class="badge ${sBadge(statusEf(c))}">${sLabel(statusEf(c))}</span>
         <span>${c.type==='consultivo'?'Consultivo':'Judicial'}</span>
         ${c.tribunal?`<span>·</span><span>${tUrl?`<a href="${tUrl}" target="_blank">${c.tribunal} ↗</a>`:c.tribunal}</span>`:''}
         ${c.processNumber?`<span>·</span><span class="mono">${c.processNumber}</span>`:''}
@@ -956,9 +1131,9 @@ function taskRow(c,t){
   // janela
   const janelaPrazo=t.tipo==='prazo'&&t.dataInicio;
   const janelaJulg=t.tipo==='julg_virt'&&t.dataFim;
-  const calHref=janelaPrazo?gcalWindow(itemName(c)+' — '+t.texto,t.dataInicio,t.data,c.processNumber)
-    :janelaJulg?gcalWindow(itemName(c)+' — '+t.texto,t.data,t.dataFim,c.processNumber)
-    :gcalLink(itemName(c)+' — '+t.texto,t.data,c.processNumber);
+  const calHref=janelaPrazo?gcalWindow(itemName(c)+' · '+t.texto,t.dataInicio,t.data,c.processNumber)
+    :janelaJulg?gcalWindow(itemName(c)+' · '+t.texto,t.data,t.dataFim,c.processNumber)
+    :gcalLink(itemName(c)+' · '+t.texto,t.data,c.processNumber);
   let dateHtml='';
   if(t.data){
     const dc=over?'over':t.tipo!=='tarefa'&&t.tipo!=='followup'?'jud':urg?'urg':'';
@@ -1074,7 +1249,7 @@ function kbCard(c){
   const hasJud=judTasks(c).length>0;const p=nextPrazo(c);const d=p?daysTo(p):null;
   return`<div class="kb-card ${hasJud?'has-jud':''}" draggable="true" data-id="${c.id}" onclick="if(!_dragging)selectKbCaso('${c.id}')">
     <div class="kb-card-name">${c.client}</div>
-    <div class="kb-card-meta">${c.type==='consultivo'?'Consultivo':(c.tribunal||'—')}${c.processNumber?' · '+c.processNumber:''}</div>
+    <div class="kb-card-meta">${c.type==='consultivo'?'Consultivo':(c.tribunal||'-')}${c.processNumber?' · '+c.processNumber:''}</div>
     ${hasJud&&d!==null?`<div class="kb-card-jud"><span class="jud-stamp">⚖ ${d<0?Math.abs(d)+'d atr.':d===0?'hoje':d+'d'}</span></div>`:''}
     ${(c.tagIds||[]).length?`<div class="kb-card-tags" onclick="event.stopPropagation()">${(c.tagIds||[]).map(id=>tagPill(id)).join('')}</div>`:''}
   </div>`;
@@ -1105,12 +1280,12 @@ function casoForm(c){
   return`<div class="fgrid">
   <div class="fg"><label>Cliente</label><input id="fi-c" value="${esc(c?c.client:'')}"></div>
   <div class="fg"><label>Tipo</label><select id="fi-t"><option value="judicial" ${!c||c.type==='judicial'?'selected':''}>Judicial</option><option value="consultivo" ${c&&c.type==='consultivo'?'selected':''}>Consultivo</option></select></div>
-  <div class="fg"><label>Tribunal</label><select id="fi-tr"><option value="">—</option>${Object.keys(TRIBUNAIS).map(t=>`<option value="${t}" ${c&&c.tribunal===t?'selected':''}>${t}</option>`).join('')}</select></div>
+  <div class="fg"><label>Tribunal</label><select id="fi-tr"><option value="">-</option>${Object.keys(TRIBUNAIS).map(t=>`<option value="${t}" ${c&&c.tribunal===t?'selected':''}>${t}</option>`).join('')}</select></div>
   <div class="fg"><label>Número do processo</label><input id="fi-p" value="${esc(c?c.processNumber:'')}"></div>
   <div class="fg full"><label>Assunto</label><input id="fi-s" value="${esc(c?c.subject:'')}"></div>
   <div class="fg"><label>Status</label><select id="fi-st">${['em_andamento','aguardando','liminar','recurso','encerrado'].map(s=>`<option value="${s}" ${c&&c.status===s?'selected':''}>${sLabel(s)}</option>`).join('')}</select></div>
-  <div class="fg"><label>Prazo judicial — abertura (opcional)</label><input id="fi-di" type="date" value=""></div>
-  <div class="fg"><label>Prazo judicial — data fatal (opcional)</label><input id="fi-d" type="date" value=""></div>
+  <div class="fg"><label>Prazo judicial · abertura (opcional)</label><input id="fi-di" type="date" value=""></div>
+  <div class="fg"><label>Prazo judicial · data fatal (opcional)</label><input id="fi-d" type="date" value=""></div>
   <div class="fg full"><label>Resumo / próximos passos</label><textarea id="fi-n" rows="3" style="resize:vertical">${esc(c?c.nextSteps:'')}</textarea></div>
   <div class="fg full"><label>Tags</label><div style="margin-top:4px">${tagCheckboxes(c?c.tagIds||[]:[],'fi-tag-')}</div></div>
 </div>
@@ -1165,7 +1340,7 @@ function sortP(arr){const now=today0();return[...arr].sort((a,b)=>{
 });}
 function bProsp(){
   const list=sortP(prospList());
-  if(!S.selProsp||!list.find(p=>p.id===S.selProsp)){S.selProsp=list.length?list[0].id:null;}
+  if(S.selProsp&&!S.prospeccao.find(p=>p.id===S.selProsp))S.selProsp=null;
   const view=S.prospView||'lista';const allP=filterByTag(S.prospeccao);
   const FILTERS=[{id:'ativos',label:'Ativos'},{id:'proposta',label:'Propostas'},{id:'contratou',label:'Contrataram'},{id:'nao_contratou',label:'Não contrataram'},{id:'todos',label:'Todos'}];
   const bar=`${tagFilterBanner()}<div class="top-bar">
@@ -1177,12 +1352,11 @@ function bProsp(){
   </div>`;
 
   if(view==='kanban'){
-    const cols=STAGES.filter(s=>!['contratou','nao_contratou'].includes(s.id));
-    const active=cols.filter(s=>allP.some(p=>p.stage===s.id));
+    const active=STAGES;
     return bar+`<div class="kb-scroll"><div class="kb">${active.map(col=>{
       const sc=STAGE_COLOR[col.id];const cards=sortP(allP.filter(p=>p.stage===col.id));
       return`<div class="kb-col"><div class="kb-col-h" style="border-left-color:${sc.fg}"><span class="t" style="color:${sc.fg}">${col.label}</span><span class="c">${cards.length}</span></div>
-      <div class="kb-drop" data-status="${col.id}">${cards.map(p=>kbProspCard(p)).join('')}</div></div>`;
+      <div class="kb-drop" data-status="${col.id}">${['contratou','nao_contratou'].includes(col.id)?'<div class="kb-final">Arraste aqui</div>':cards.map(p=>kbProspCard(p)).join('')}</div></div>`;
     }).join('')}</div></div>`;
   }
 
@@ -1191,10 +1365,10 @@ function bProsp(){
   return bar+`<div class="md">
     <div class="md-list ${hideList}">
       <div class="md-search"><input placeholder="Buscar prospecção…" value="${esc(S.search)}" oninput="S.search=this.value;render()"></div>
-      <div class="md-rows">${list.length?list.map(p=>prospRow(p)).join(''):`<div class="empty" style="padding:26px">Nenhuma prospecção neste filtro.</div>`}</div>
+      <div class="md-rows">${list.length?prospRowsAgrupadas(list):`<div class="empty" style="padding:26px">Nenhuma prospecção neste filtro.</div>`}</div>
     </div>
-    <div class="md-detail ${hideDetail}">
-      <button class="back-mobile" onclick="S.mobileDetail=false;render()">‹ Voltar à lista</button>
+    ${sel?`<div class="drawer-bg" onclick="fecharFicha()"></div>`:''}<div class="md-detail ${hideDetail} ${sel?'open':''}">
+      <button class="drawer-x" onclick="fecharFicha()" title="Fechar (Esc)">× Fechar</button>
       ${sel?prospDetail(sel):`<div class="empty" style="padding:60px"><div class="big">Selecione uma prospecção</div></div>`}
     </div>
   </div>`;
@@ -1222,7 +1396,7 @@ function prospDetail(p){
         ${p.subject?`<span>·</span><span>${esc(p.subject)}</span>`:''}
       </div>
     </div>
-    <div class="dt-actions"><button class="iconbtn" onclick="startProspEdit('${p.id}')" title="Editar dados">Editar</button><button class="iconbtn del" onclick="delSP('${p.id}')" title="Remover">Remover</button></div>
+    <div class="dt-actions">${p.casoId&&S.casos.find(c=>c.id===p.casoId)?`<button class="iconbtn" onclick="goCaso('${p.casoId}')">Ver caso</button>`:`<button class="btn btn-pri btn-sm" onclick="openConvert('${p.id}')">Abrir caso</button>`}<button class="iconbtn" onclick="startProspEdit('${p.id}')" title="Editar dados">Editar</button><button class="iconbtn del" onclick="delSP('${p.id}')" title="Remover">Remover</button></div>
   </div>
   ${(p.tagIds||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px">${(p.tagIds||[]).map(id=>tagPill(id)).join('')}</div>`:''}
 </div>
@@ -1231,8 +1405,8 @@ function prospDetail(p){
     <div class="dt-sec-h"><h4>Estágio no funil</h4></div>
     <select style="width:100%;padding:9px 11px;border:1px solid var(--line2);border-radius:var(--r);font-family:inherit;font-size:13px" onchange="updSP('${p.id}',this.value)">${STAGES.map(s=>`<option value="${s.id}" ${p.stage===s.id?'selected':''}>${s.label}</option>`).join('')}</select>
     <div class="info-grid" style="margin-top:10px">
-      <div class="info-cell"><div class="k">Último contato</div><div class="v">${p.lastContact?fDate(p.lastContact)+(since!==null?' · há '+since+'d':''):'—'}</div></div>
-      <div class="info-cell" style="${fuV?'background:var(--red-bg);border-color:var(--red-b)':''}"><div class="k">Follow-up</div><div class="v" style="${fuV?'color:var(--red)':'color:var(--ora)'}">${p.followupDate?fDate(p.followupDate)+(fuV?' · vencido!':''):'—'}</div></div>
+      <div class="info-cell"><div class="k">Último contato</div><div class="v">${p.lastContact?fDate(p.lastContact)+(since!==null?' · há '+since+'d':''):'-'}</div></div>
+      <div class="info-cell" style="${fuV?'background:var(--red-bg);border-color:var(--red-b)':''}"><div class="k">Follow-up</div><div class="v" style="${fuV?'color:var(--red)':'color:var(--ora)'}">${p.followupDate?fDate(p.followupDate)+(fuV?' · vencido!':''):'-'}</div></div>
     </div>
   </div>
   ${tasksSection(p)}
@@ -1313,7 +1487,7 @@ function honCard(c,proxVenc){
       <div style="font-size:11px;color:${plRest>0||exRest>0?'var(--ora)':'var(--grn)'};font-weight:600;margin-top:2px">${plRest>0||exRest>0?'A receber: '+fCur(plRest+exRest):'✓ Quitado'}</div></div>
       <div style="display:flex;gap:6px;align-items:center">${(c.tagIds||[]).map(id=>tagPill(id)).join('')}<button class="btn btn-pri btn-sm" onclick="openModal('hon','${c.id}')">+ Lançar</button></div>
     </div>
-    ${proxAberta?`<div style="margin-bottom:10px;padding:7px 11px;background:var(--ora-bg);border:1px solid var(--ora-b);border-radius:var(--r);display:flex;justify-content:space-between;align-items:center"><span style="font-size:10.5px;color:var(--ora);font-weight:600">Próxima parcela${proxAberta.parcela.vencimento?' — '+fDate(proxAberta.parcela.vencimento):''}</span><span style="font-size:12px;font-weight:700;color:var(--ora)">${fCur(proxAberta.parcela.valor)}</span></div>`:''}
+    ${proxAberta?`<div style="margin-bottom:10px;padding:7px 11px;background:var(--ora-bg);border:1px solid var(--ora-b);border-radius:var(--r);display:flex;justify-content:space-between;align-items:center"><span style="font-size:10.5px;color:var(--ora);font-weight:600">Próxima parcela${proxAberta.parcela.vencimento?' · '+fDate(proxAberta.parcela.vencimento):''}</span><span style="font-size:12px;font-weight:700;color:var(--ora)">${fCur(proxAberta.parcela.valor)}</span></div>`:''}
     ${hs.map(h=>{
       const pago=getPago(h),total=h.valor||0,rest=total-pago;const parcelas=h.parcelas||[];const proxP=getProximaParcelaAberta(h);
       return`<div class="hdet">
@@ -1337,7 +1511,7 @@ function honCard(c,proxVenc){
 }
 function honEditForm(editingC,editingH){
   return`<div class="hedit">
-<div class="hedit-lbl">Editando: ${editingC.client} — ${editingH.tipo==='proLabore'?'Pro-labore':'Êxito'}</div>
+<div class="hedit-lbl">Editando: ${editingC.client} · ${editingH.tipo==='proLabore'?'Pro-labore':'Êxito'}</div>
 <div class="fgrid">
   <div class="fg"><label>Tipo</label><select id="he-t"><option value="proLabore" ${editingH.tipo==='proLabore'?'selected':''}>Pro-labore</option><option value="exito" ${editingH.tipo==='exito'?'selected':''}>Êxito</option></select></div>
   ${editingH.tipo==='exito'?`<div class="fg"><label>Cálculo</label><select id="he-ct"><option value="fixo" ${(editingH.calcTipo||'fixo')==='fixo'?'selected':''}>Valor fixo</option><option value="percentual" ${editingH.calcTipo==='percentual'?'selected':''}>Percentual</option></select></div>`:'<div></div>'}
@@ -1365,10 +1539,10 @@ function bCont(){
   ${chk('NFs emitidas após recebimento','nfsEmitidas',cd.nfsEmitidas)}
   ${chk('Categorização Conube ao longo do mês','conubeFeito',cd.conubeFeito)}
   ${chk('Fechamento Conube (1º do próximo mês)','fechConube',cd.fechConube)}
-  <div class="das-row"><div class="check-item${cd.dasPago?' done':''}" style="border:none;padding:0"><input type="checkbox" id="ck-das" ${cd.dasPago?'checked':''} onchange="ckCo('${mk}','dasPago',this.checked)"><label for="ck-das">DAS pago — vencimento dia 20</label></div><span style="font-size:11.5px;font-weight:700;color:${du?'var(--red)':cd.dasPago?'var(--grn)':'var(--muted)'}">${cd.dasPago?'✓ Pago':du?'Urgente: '+dl+'d':Math.max(0,dl)+' dias'}</span></div>
+  <div class="das-row"><div class="check-item${cd.dasPago?' done':''}" style="border:none;padding:0"><input type="checkbox" id="ck-das" ${cd.dasPago?'checked':''} onchange="ckCo('${mk}','dasPago',this.checked)"><label for="ck-das">DAS pago · vencimento dia 20</label></div><span style="font-size:11.5px;font-weight:700;color:${du?'var(--red)':cd.dasPago?'var(--grn)':'var(--muted)'}">${cd.dasPago?'✓ Pago':du?'Urgente: '+dl+'d':Math.max(0,dl)+' dias'}</span></div>
 </div>
 <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="font-size:13px;font-weight:600">NFs emitidas este mês</h3><button class="btn btn-pri btn-sm" onclick="openModal('nf')">+ Registrar NF</button></div>
-  ${!nfs.length?`<p style="font-size:12px;color:var(--muted)">Nenhuma NF registrada.</p>`:nfs.map((nf,i)=>`<div class="nf-row"><span>${esc(nf.client)}${nf.number?' — NF '+nf.number:''}</span><div style="display:flex;gap:8px;align-items:center"><span style="color:var(--muted)">${fCur(nf.valor)}</span><button class="alink del" onclick="delNF('${mk}',${i})">×</button></div></div>`).join('')}
+  ${!nfs.length?`<p style="font-size:12px;color:var(--muted)">Nenhuma NF registrada.</p>`:nfs.map((nf,i)=>`<div class="nf-row"><span>${esc(nf.client)}${nf.number?' · NF '+nf.number:''}</span><div style="display:flex;gap:8px;align-items:center"><span style="color:var(--muted)">${fCur(nf.valor)}</span><button class="alink del" onclick="delNF('${mk}',${i})">×</button></div></div>`).join('')}
   ${nfs.length?`<div style="font-size:12.5px;font-weight:700;margin-top:10px">Total: ${fCur(nfs.reduce((s,n)=>s+(n.valor||0),0))}</div>`:''}
 </div>`;
 }
@@ -1466,14 +1640,14 @@ prospecção: [nome] → tarefa: montar minuta | tarefa | 12/06/2026
 prospecção: [nome] → followup: 20/06/2026
 prospecção: [nome] → notes: texto</pre>
 <p style="font-size:11px;color:var(--muted);margin-top:10px"><b>tipos de tarefa:</b> prazo (judicial) · julgamento presencial · julgamento virtual · audiência/despacho · follow-up · tarefa. Cada tipo tem cor e ícone próprios no painel.</p>
-<p style="font-size:11px;color:var(--muted);margin-top:4px"><b>janelas de data:</b> no <b>prazo</b> use <b>abertura a fatal</b> (ex: 19/05/2026 a 25/05/2026) — o contador usa a data fatal, a abertura é informativa. No <b>julgamento virtual</b> use <b>início a fim</b> da sessão — o contador usa o início.</p>
+<p style="font-size:11px;color:var(--muted);margin-top:4px"><b>janelas de data:</b> no <b>prazo</b> use <b>abertura a fatal</b> (ex: 19/05/2026 a 25/05/2026) · o contador usa a data fatal, a abertura é informativa. No <b>julgamento virtual</b> use <b>início a fim</b> da sessão · o contador usa o início.</p>
 <p style="font-size:11px;color:var(--muted);margin-top:4px"><b>frentes, honorários e histórico</b> funcionam igual em casos e prospecções (basta trocar <b>caso:</b> por <b>prospecção:</b>).</p>
 <p style="font-size:11px;color:var(--muted);margin-top:4px"><b>baixa:</b> conclui a tarefa (busca por texto) e joga no histórico automaticamente.</p>
 <p style="font-size:11px;color:var(--muted);margin-top:4px"><b>status do caso:</b> em andamento · aguardando · encerrado · liminar · recurso</p>
 <p style="font-size:11px;color:var(--muted);margin-top:4px"><b>estágios da prospecção:</b> fazer contato · aguardando documentos · elaborar proposta · aguardando retorno da proposta · contratou · não contratou</p>`;
 }
 
-// ══ HONORÁRIOS — modal completo ════════════════════════
+// ══ HONORÁRIOS · modal completo ════════════════════════
 function honModalBody(){
   return`<div class="fgrid">
   <div class="fg"><label>Tipo</label><select id="mh-t" onchange="honTipoChange()"><option value="proLabore">Pro-labore</option><option value="exito">Êxito</option></select></div>
@@ -1484,9 +1658,9 @@ function honModalBody(){
   <div class="fg" id="mh-total-wrap" style="display:none"><label>Total estimado do êxito</label><input id="mh-total" type="number" readonly style="background:var(--paper);color:var(--muted)"></div>
 </div>
 <div id="mh-parceiros-wrap" style="display:none;margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><label style="font-size:11px;color:var(--muted);font-weight:500">Parceiros no êxito</label><button type="button" class="btn btn-ghost btn-sm" onclick="addParceiro()">+ Parceiro</button></div><div id="mh-parceiros-list"></div><div id="mh-minha-parte" style="margin-top:8px;padding:8px 10px;background:var(--grn-bg);border:1px solid var(--grn-b);border-radius:var(--r);font-size:12px;color:var(--grn);font-weight:500;display:none"></div></div>
-<div id="mh-gatilho-wrap" style="display:none;margin-top:12px;padding:12px;background:var(--ora-bg);border:1px solid var(--ora-b);border-radius:var(--r)"><label style="font-size:11px;color:var(--ora);font-weight:600">Gatilho do êxito — quando o valor fica devido</label><input id="mh-gatilho" placeholder="Ex: Transitado em julgado, alvará expedido, indenização recebida…" style="margin-top:6px;width:100%;padding:7px 10px;border:1px solid var(--ora-b);border-radius:var(--r);font-family:inherit;font-size:12px"></div>
+<div id="mh-gatilho-wrap" style="display:none;margin-top:12px;padding:12px;background:var(--ora-bg);border:1px solid var(--ora-b);border-radius:var(--r)"><label style="font-size:11px;color:var(--ora);font-weight:600">Gatilho do êxito · quando o valor fica devido</label><input id="mh-gatilho" placeholder="Ex: Transitado em julgado, alvará expedido, indenização recebida…" style="margin-top:6px;width:100%;padding:7px 10px;border:1px solid var(--ora-b);border-radius:var(--r);font-family:inherit;font-size:12px"></div>
 <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><label style="font-size:11px;color:var(--muted);font-weight:600">Parcelas</label><button type="button" class="btn btn-ghost btn-sm" onclick="addMParcela()">+ Parcela</button></div><div id="mh-parcelas-list"></div><p style="font-size:10px;color:var(--faint);margin-top:4px">Deixe em branco para lançar sem parcelamento.</p></div>
-<div class="fgrid" style="margin-top:10px"><div class="fg"><label>Follow-up — cobrar em</label><input id="mh-fu" type="date"></div><div class="fg full"><label>Observações</label><textarea id="mh-obs" rows="2" style="resize:vertical"></textarea></div></div>
+<div class="fgrid" style="margin-top:10px"><div class="fg"><label>Follow-up · cobrar em</label><input id="mh-fu" type="date"></div><div class="fg full"><label>Observações</label><textarea id="mh-obs" rows="2" style="resize:vertical"></textarea></div></div>
 <div class="factions"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-pri" onclick="saveHon()">Lançar</button></div>`;
 }
 function honTipoChange(){const isEx=gv('mh-t')==='exito';document.getElementById('mh-calctipo-wrap').style.display=isEx?'':'none';document.getElementById('mh-parceiros-wrap').style.display=isEx?'block':'none';const gw=document.getElementById('mh-gatilho-wrap');if(gw)gw.style.display=isEx?'block':'none';honCalcChange();}
@@ -1555,14 +1729,14 @@ function deleteTag(id){if(!confirm('Remover esta tag?'))return;S.tags=S.tags.fil
 
 // ══ EXPORT ═════════════════════════════════════════════
 function exportResume(){
-  const lines=['=== ESTADO ATUAL — ESCRITÓRIO ===','','CASOS ATIVOS:'];
+  const lines=['=== ESTADO ATUAL · ESCRITÓRIO ===','','CASOS ATIVOS:'];
   sortC(S.casos.filter(c=>c.status!=='encerrado')).forEach(c=>{
-    lines.push('• '+c.client+' ['+sLabel(c.status)+']'+(c.tribunal?' — '+c.tribunal:'')+(c.processNumber?' ('+c.processNumber+')':''));
+    lines.push('• '+c.client+' ['+sLabel(c.status)+']'+(c.tribunal?' · '+c.tribunal:'')+(c.processNumber?' ('+c.processNumber+')':''));
     judTasks(c).forEach(t=>lines.push('  ⚖ PRAZO '+fDate(t.data)+': '+t.texto));
     pendTasks(c).filter(t=>t.tipo!=='prazo').slice(0,4).forEach(t=>lines.push('  → '+t.texto+(t.data?' ('+fDate(t.data)+')':'')));
   });
   lines.push('','PROSPECÇÕES ATIVAS:');
-  S.prospeccao.filter(p=>!['fechado','perdido'].includes(p.stage)).forEach(p=>lines.push('• '+p.name+' ['+((STAGES.find(s=>s.id===p.stage)||{}).label||p.stage)+']'+(p.subject?' — '+p.subject:'')));
+  S.prospeccao.filter(p=>!['fechado','perdido'].includes(p.stage)).forEach(p=>lines.push('• '+p.name+' ['+((STAGES.find(s=>s.id===p.stage)||{}).label||p.stage)+']'+(p.subject?' · '+p.subject:'')));
   const txt=lines.join('\n');
   navigator.clipboard.writeText(txt).then(()=>alert('Copiado! Cole no Claude para sincronizar.')).catch(()=>{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert('Copiado!');});
 }
@@ -1578,7 +1752,7 @@ function migrate(){
     (c.honorarios||[]).forEach(h=>{if(!h.parcelas)h.parcelas=[];});
     // garantir campos de janela em tarefas judiciais
     c.tarefas.forEach(t=>{if(isJud(t.tipo)){if(t.dataInicio===undefined)t.dataInicio='';if(t.dataFim===undefined)t.dataFim='';}});
-    // limpar campo legado c.deadline (aposentado — resíduo de versões antigas)
+    // limpar campo legado c.deadline (aposentado · resíduo de versões antigas)
     if('deadline' in c){delete c.deadline;changed=true;}
   });
   // prospecção: migrar estágios antigos → novos e garantir arrays
@@ -1621,6 +1795,1052 @@ async function init(){
   if(!SECRET){pedirSenha('');return;}
   loadLocal();migrate();render();await syncFromSheet();
 }
+
+// ══ V2 ═════════════════════════════════════════════════
+// Menu lateral, Painel do dia, Providências, tipos novos, hora, subitens,
+// automações da prospecção e conversão em caso.
+const TESTE=false;
+if(TESTE){
+  lsGet=function(k,d){try{const v=localStorage.getItem('teste_'+k);return v?JSON.parse(v):d;}catch(e){return d;}};
+  lsSet=function(k,v){try{localStorage.setItem('teste_'+k,JSON.stringify(v));}catch(e){}};
+  saveData=async function(){saveLocal();toast('Modo teste: alteração feita só nesta tela, não foi gravada.');};
+  const _rb=renderBadge;
+  renderBadge=function(){_rb();const el=document.getElementById('sync-badge-2');if(el&&syncSt==='ok'){el.textContent='Modo teste (somente leitura da planilha)';el.style.color='#7a5200';}};
+}
+
+// ── tipos de tarefa ────────────────────────────────────
+Object.assign(TASK_TIPOS,{
+  audiencia:{label:'Audiência',short:'Audiência',icon:'🗣',color:'#b45309',bg:'#fdf3e3',bd:'#f2d9a8',jud:true},
+  despacho: {label:'Despacho',short:'Despacho',icon:'🤝',color:'#9a3412',bg:'#fbeee6',bd:'#efc9b0',jud:true},
+  tarefa:   {label:'Tarefa',short:'Tarefa',icon:'•',color:'#647089',bg:'',bd:'',jud:false},
+  examinar: {label:'Examinar documentos',short:'Examinar docs',icon:'🔎',color:'#0f766e',bg:'',bd:'',jud:false},
+  elab_peca:{label:'Elaborar peça / petição',short:'Peça',icon:'✍',color:'#4338ca',bg:'',bd:'',jud:false},
+  elab_doc: {label:'Elaborar documento',short:'Documento',icon:'📝',color:'#4338ca',bg:'',bd:'',jud:false},
+  reuniao:  {label:'Reunião',short:'Reunião',icon:'👥',color:'#7c3aed',bg:'#f2eefb',bd:'#d3c2f5',jud:false},
+  ligacao:  {label:'Ligação / contato',short:'Ligação',icon:'📞',color:'#0369a1',bg:'',bd:'',jud:false},
+  followup: {label:'Cobrar retorno / follow-up',short:'Cobrar retorno',icon:'↩',color:'#3b5ea6',bg:'#e9eef8',bd:'#bccbe9',jud:false},
+  outro:    {label:'Outro (escrever)',short:'Outro',icon:'◦',color:'#647089',bg:'',bd:'',jud:false},
+});
+if(!JUD_TIPOS.includes('despacho'))JUD_TIPOS.push('despacho');
+const TIPOS_TRAB=['tarefa','examinar','elab_peca','elab_doc','reuniao','ligacao','followup','outro'];
+const TIPOS_JUDL=['prazo','julg_pres','julg_virt','audiencia','despacho'];
+function tipoOpts(sel){
+  const o=k=>`<option value="${k}" ${sel===k?'selected':''}>${TASK_TIPOS[k].icon} ${TASK_TIPOS[k].label}</option>`;
+  return`<optgroup label="Trabalho">${TIPOS_TRAB.map(o).join('')}</optgroup><optgroup label="Judicial">${TIPOS_JUDL.map(o).join('')}</optgroup>`;
+}
+function tipoNome(t){const m=TASK_TIPOS[t.tipo]||TASK_TIPOS.tarefa;return t.tipo==='outro'&&t.tipoLivre?t.tipoLivre:m.short;}
+function chipTipo(t){const m=TASK_TIPOS[t.tipo]||TASK_TIPOS.tarefa;return`<span class="chip" style="color:${m.color};${m.bg?`background:${m.bg};border-color:${m.bd}`:'background:var(--paper2)'}">${m.icon} ${esc(tipoNome(t))}</span>`;}
+function isProsp(x){return S.prospeccao.includes(x);}
+function goItem(x){return isProsp(x)?`goProsp('${x.id}')`:`goCaso('${x.id}')`;}
+function hojeISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function maisDias(n){const d=today0();d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function normHora(v){if(!v)return'';const m=String(v).match(/(\d{1,2})\s*(?:[:h]\s*(\d{2})?)/i);if(!m)return'';const h=+m[1],mi=m[2]?+m[2]:0;if(h>23||mi>59)return'';return String(h).padStart(2,'0')+':'+String(mi).padStart(2,'0');}
+function toast(msg){let el=document.getElementById('toast');if(!el){el=document.createElement('div');el.id='toast';document.body.appendChild(el);}el.textContent=msg;el.style.display='block';clearTimeout(el._t);el._t=setTimeout(()=>el.style.display='none',3800);}
+function gcalTask(c,t){
+  const title=itemName(c)+' · '+t.texto,proc=c.processNumber||'';
+  if(t.tipo==='prazo'&&t.dataInicio)return gcalWindow(title,t.dataInicio,t.data,proc);
+  if(t.tipo==='julg_virt'&&t.dataFim)return gcalWindow(title,t.data,t.dataFim,proc);
+  if(t.data&&t.hora){
+    const[hh,mm]=t.hora.split(':').map(Number);const day=t.data.replace(/-/g,'');
+    const s=day+'T'+String(hh).padStart(2,'0')+String(mm).padStart(2,'0')+'00';
+    const e=day+'T'+String(Math.min(hh+1,23)).padStart(2,'0')+String(mm).padStart(2,'0')+'00';
+    return'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent('[Escritório] '+title)+'&dates='+s+'/'+e+'&ctz=America/Sao_Paulo&details='+encodeURIComponent(proc);
+  }
+  return gcalLink(title,t.data,proc);
+}
+
+// ── conjuntos ──────────────────────────────────────────
+function ativosC(){return S.casos.filter(c=>c.status!=='encerrado');}
+function ativosP(){return S.prospeccao.filter(p=>!['contratou','nao_contratou'].includes(p.stage));}
+function provItems(){
+  const out=[];
+  const push=(x,isP)=>pendTasks(x).forEach(t=>{if(!isJud(t.tipo)||t.tipo==='prazo')out.push({c:x,t,isP,d:t.data?daysTo(t.data):null});});
+  ativosC().forEach(c=>push(c,false));ativosP().forEach(p=>push(p,true));
+  return out;
+}
+function isHoje(o){return(o.d!==null&&o.d<=0)||!!o.t.foco;}
+function provSort(a,b){
+  const ka=a.d!==null&&a.d<=0?a.d:(a.t.foco?0.5:(a.d===null?999:a.d)),kb=b.d!==null&&b.d<=0?b.d:(b.t.foco?0.5:(b.d===null?999:b.d));
+  if(ka!==kb)return ka-kb;return(a.t.hora||'99').localeCompare(b.t.hora||'99');
+}
+function whenOf(t,d){
+  if(d===null)return t.foco?{txt:'★ hoje',col:'#b7791f'}:{txt:'sem data',col:'var(--faint)'};
+  const h=t.hora?' '+t.hora:'';
+  if(d<0)return{txt:Math.abs(d)+(Math.abs(d)>1?' dias':' dia')+' de atraso',col:'var(--red)'};
+  if(d===0)return{txt:'hoje'+h,col:'var(--ora)'};
+  if(d===1)return{txt:'amanhã'+h,col:'var(--blu)'};
+  return{txt:fDateShort(t.data)+h,col:'var(--blu)'};
+}
+
+// ── MENU LATERAL ───────────────────────────────────────
+const NAV=[
+  {id:'dashboard',label:'Painel',ic:'◧'},
+  {id:'prov',label:'Providências',ic:'☑',view:'provView',subs:[['lista','Por cliente'],['quadro','Quadro']]},
+  {id:'casos',label:'Casos',ic:'⚖',view:'casosView',subs:[['lista','Lista'],['kanban','Quadro']]},
+  {id:'prospeccao',label:'Prospecção',ic:'◎',view:'prospView',subs:[['lista','Lista'],['kanban','Funil']]},
+  {id:'honorarios',label:'Honorários',ic:'$'},
+  {id:'contabil',label:'Contábil',ic:'▤'},
+];
+function navGo(tab,view){const n=NAV.find(x=>x.id===tab);if(view&&n&&n.view)S[n.view]=view;setTab(tab);}
+function render(){
+  const now=new Date();
+  document.getElementById('hdr-date').textContent=now.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const jud=judAlertCount();
+  document.getElementById('hdr-alert').innerHTML=jud>0?`<div class="alert-pill pill-red">${jud} ${jud>1?'atos judiciais em até 7 dias':'ato judicial em até 7 dias'}</div>`:`<div class="alert-pill pill-grn">Sem prazos críticos</div>`;
+  const prov=provItems();const hojeN=prov.filter(o=>isHoje(o)).length;
+  const pc=pendContabeis();const cnt={prov:{n:prov.length,hot:hojeN>0},casos:{n:ativosC().length},prospeccao:{n:ativosP().length},contabil:pc?{n:pc,hot:true}:null};
+  document.getElementById('tabs').innerHTML=`<div class="nav-brand">Marquez Advogados</div>`+NAV.map(n=>{
+    const on=S.tab===n.id;const c=cnt[n.id];
+    const badge=c?`<span class="nav-cnt${c.hot&&!on?' hot':''}">${c.n}</span>`:'';
+    const subs=on&&n.subs?n.subs.map(([v,l])=>`<button class="nav-sub${(S[n.view]||'lista')===v?' on':''}" onclick="navGo('${n.id}','${v}')">${l}</button>`).join(''):'';
+    return`<button class="nav-item${on?' on':''}" onclick="navGo('${n.id}')"><span class="nav-ic">${n.ic}</span><span class="nav-lbl">${n.label}</span>${badge}</button>${subs}`;
+  }).join('')+`<div class="nav-sep"></div>`+PJE.map(l=>`<a class="nav-sub" style="padding-left:12px" href="${l.url}" target="_blank">PJe ${l.label} ↗</a>`).join('')+`<a class="nav-sub" style="padding-left:12px" href="stj/" target="_blank">Monitor STJ ↗</a>`;
+  const builders={dashboard:bDash,prov:bProv,casos:bCasos,honorarios:bHon,prospeccao:bProsp,contabil:bCont};
+  const band=TESTE?`<div class="teste-band">Modo teste: você está vendo os seus dados reais, mas nada do que fizer aqui é gravado. Ao recarregar a página, tudo volta ao que está na planilha.</div>`:'';
+  document.getElementById('tab-body').innerHTML=band+(builders[S.tab]||bDash)();
+  if(S.tab==='casos'&&S.casosView==='kanban')wireKanban('caso');
+  if(S.tab==='prospeccao'&&S.prospView==='kanban')wireKanban('prosp');
+  if(S.tab==='prov'&&S.provView==='quadro')wireProvBoard();
+  renderBadge();setTop();
+}
+function setTop(){
+  const h=document.getElementById('ubar').offsetHeight;
+  document.getElementById('app').style.paddingTop=(h+16)+'px';
+  const tb=document.getElementById('tabs');if(tb)tb.style.top=window.innerWidth>900?h+'px':'';
+}
+
+// ── PAINEL DO DIA ──────────────────────────────────────
+function judBlock(){
+  const items=[];
+  const push=(x,isP)=>judTasks(x).forEach(tk=>items.push({d:daysTo(tk.data),c:x,tk,isP}));
+  ativosC().forEach(c=>push(c,false));ativosP().forEach(p=>push(p,true));
+  items.sort((a,b)=>a.d-b.d||(a.tk.hora||'99').localeCompare(b.tk.hora||'99'));
+  if(!items.length)return`<div class="empty-ok">Nenhum prazo, julgamento, audiência ou despacho pendente.</div>`;
+  return`<div class="tl">`+items.map(({d,c,tk,isP})=>{
+    const meta=TASK_TIPOS[tk.tipo]||TASK_TIPOS.prazo;const over=d<0;const nome=itemName(c),proc=c.processNumber||'';
+    const janP=tk.tipo==='prazo'&&tk.dataInicio,janJ=tk.tipo==='julg_virt'&&tk.dataFim;
+    const janela=janP?`<span style="color:${meta.color};font-weight:600">abre ${fDateShort(tk.dataInicio)}, fatal ${fDateShort(tk.data)}</span> · `
+      :janJ?`<span style="color:${meta.color};font-weight:600">sessão de ${fDateShort(tk.data)} a ${fDateShort(tk.dataFim)}</span> · `:'';
+    const barCol=over?'var(--red)':meta.color;
+    const itemBg=over?'background:var(--red-bg);border-color:var(--red-b);':meta.bg?`background:${meta.bg};border-color:${meta.bd};`:'';
+    const dTxt=over?Math.abs(d)+'d atr.':d===0?'hoje':d===1?'amanhã':d+'d';
+    return`<div class="tl-item" style="border-left:4px solid ${barCol};${itemBg}" onclick="${isP?'goProsp':'goCaso'}('${c.id}')">
+      <div class="tl-c">
+        <div class="tl-lbl"><span style="color:${meta.color};font-weight:700">${meta.icon} ${meta.short}</span>${c.tribunal?' · '+c.tribunal:''}${isP?' · <span style="color:var(--faint)">prospecção</span>':''}</div>
+        <div class="tl-main">${esc(nome)}</div>
+        <div class="tl-sub">${janela}${esc(tk.texto)}${proc?' · '+proc:''}</div>
+      </div>
+      <div class="tl-r">
+        <div class="tl-days" style="color:${over?'var(--red)':meta.color}">${dTxt}</div>
+        <div style="font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap">${fDiaSem(tk.data)}${tk.hora?' · '+tk.hora:''}</div>
+        <a href="${gcalTask(c,tk)}" target="_blank" onclick="event.stopPropagation()" class="mini-cal">Agenda</a>
+      </div>
+    </div>`;
+  }).join('')+`</div>`;
+}
+function dashRow(o){
+  if(o.kind==='hon'){
+    const w=o.d<0?{txt:Math.abs(o.d)+'d de atraso',col:'var(--red)'}:o.d===0?{txt:'hoje',col:'var(--ora)'}:{txt:fDateShort(o.it.parcela.vencimento),col:'var(--grn)'};
+    return`<div class="dr ${o.d<0?'over':''}"><span style="width:18px;text-align:center;color:var(--grn);font-weight:700">$</span>
+      <div class="dr-c"><div class="dr-txt">Receber ${esc(o.it.parcela.descricao||'parcela')}: ${fCur(o.it.parcela.valor)}</div>
+      <div class="dr-meta"><span class="chip" style="color:var(--grn);background:var(--grn-bg);border-color:var(--grn-b)">Honorário ${o.it.tipo==='proLabore'?'pro-labore':'êxito'}</span><span class="dr-cli" onclick="goCaso('${o.it.casoId}')">${esc(o.it.client)}</span></div></div>
+      <div class="dr-when" style="color:${w.col}">${w.txt}</div>
+      <button class="btn btn-ghost btn-sm conv-btn" onclick="toggleParcela('${o.it.casoId}','${o.it.honorarioId}','${o.it.parcela.id}',true)" title="Marcar esta parcela como paga">Recebido</button></div>`;
+  }
+  if(o.kind==='nf'){
+    const n=o.n;
+    return`<div class="dr"><span style="width:18px;text-align:center;color:var(--ora);font-weight:700">NF</span>
+      <div class="dr-c"><div class="dr-txt">Emitir nota fiscal: ${fCur(n.valor)}</div><div class="dr-meta"><span class="dr-cli" onclick="goCaso('${n.itemId}')">${esc(n.client)}</span> · ${esc(n.descricao)}</div></div>
+      <div class="dr-when" style="color:var(--ora)">recebido ${fDateShort(n.data)}</div>
+      <button class="btn btn-ghost btn-sm conv-btn" onclick="navGo('contabil')">Contábil ›</button></div>`;
+  }
+  if(o.kind==='conv'){
+    const p=o.p;
+    return`<div class="dr"><span style="width:18px;text-align:center;color:var(--grn);font-weight:700">✓</span>
+      <div class="dr-c"><div class="dr-txt">Contratou: abrir o caso</div><div class="dr-meta"><span class="dr-cli" onclick="goProsp('${p.id}')">${esc(p.name)}</span>${p.subject?' · '+esc(p.subject):''}</div></div>
+      <button class="btn btn-pri btn-sm conv-btn" onclick="openConvert('${p.id}')">Abrir caso</button>
+      <button class="btn btn-ghost btn-sm conv-btn" onclick="jaTemCaso('${p.id}')" title="O caso já existe no painel">Já tem caso</button></div>`;
+  }
+  if(o.kind==='fu'){
+    const p=o.p;const w=o.d<0?{txt:Math.abs(o.d)+'d de atraso',col:'var(--red)'}:o.d===0?{txt:'hoje',col:'var(--ora)'}:{txt:fDateShort(p.followupDate),col:'var(--blu)'};
+    return`<div class="dr ${o.d<0?'over':''}"><span style="width:18px;text-align:center;color:var(--car)">↩</span>
+      <div class="dr-c"><div class="dr-txt">Follow-up da prospecção</div><div class="dr-meta"><span class="dr-cli" onclick="goProsp('${p.id}')">${esc(p.name)}</span>${p.subject?' · '+esc(p.subject):''}</div></div>
+      <div class="dr-when" style="color:${w.col}">${w.txt}</div></div>`;
+  }
+  const{c,t,d}=o;const w=whenOf(t,d);const subs=t.sub||[];const sd=subs.filter(s=>s.feito).length;
+  return`<div class="dr ${d!==null&&d<0?'over':''}">
+    <input type="checkbox" class="dr-chk" title="Concluir" onchange="toggleTask('${c.id}','${t.id}',this.checked)">
+    <button class="star ${t.foco?'on':''}" title="${t.foco?'Tirar de hoje':'Fazer hoje'}" onclick="toggleFoco('${c.id}','${t.id}')">${t.foco?'★':'☆'}</button>
+    <div class="dr-c"><div class="dr-txt">${esc(t.texto)}</div>
+      <div class="dr-meta">${chipTipo(t)}${chipEtapa(t)}<span class="dr-cli" onclick="${goItem(c)}">${esc(itemName(c))}</span>${o.isP?'<span style="color:var(--faint)">prospecção</span>':''}${subs.length?`<span>☑ ${sd}/${subs.length}</span>`:''}</div></div>
+    <div class="dr-when" style="color:${w.col}">${w.txt}</div></div>`;
+}
+function bDash(){
+  const prov=provItems();
+  const hoje=prov.filter(o=>!isJud(o.t.tipo)&&isHoje(o)).map(o=>Object.assign({kind:'task'},o));
+  const prox=prov.filter(o=>!isJud(o.t.tipo)&&o.d!==null&&o.d>=1&&o.d<=7&&!o.t.foco).map(o=>Object.assign({kind:'task'},o));
+  getAllProximasParcelas(60).forEach(it=>{if(it.dl===null)return;if(it.dl<=0)hoje.push({kind:'hon',it,d:it.dl});else if(it.dl<=7)prox.push({kind:'hon',it,d:it.dl});});
+  ativosP().forEach(p=>{
+    if(!p.followupDate)return;
+    if(pendTasks(p).some(t=>t.tipo==='followup'&&t.data))return;
+    const d=daysTo(p.followupDate);if(d<=0)hoje.push({kind:'fu',p,d});else if(d<=7)prox.push({kind:'fu',p,d});
+  });
+  S.prospeccao.filter(precisaCaso).forEach(p=>hoje.push({kind:'conv',p,d:0}));
+  nfStore().forEach(n=>hoje.push({kind:'nf',n,d:0}));
+  const key=o=>o.kind==='task'?(o.d!==null&&o.d<=0?o.d:0.5):o.d;
+  hoje.sort((a,b)=>key(a)-key(b)||((a.t&&a.t.hora)||'99').localeCompare((b.t&&b.t.hora)||'99'));
+  prox.sort((a,b)=>a.d-b.d||((a.t&&a.t.hora)||'99').localeCompare((b.t&&b.t.hora)||'99'));
+  const atras=hoje.filter(o=>o.d!==null&&o.d<0).length;
+  const semData=prov.filter(o=>o.d===null&&!o.t.foco).length;
+  const aguard=S.prospeccao.filter(p=>p.stage==='aguardando_retorno').length;
+  const elab=S.prospeccao.filter(p=>['examinar_docs','elaborar_proposta'].includes(p.stage)).length;
+  return`<div class="dash">
+  <div>
+    <div class="blk">
+      <div class="blk-h"><h2>⚖ Judicial</h2><span class="hint">prazos, julgamentos, audiências e despachos</span></div>
+      ${judBlock()}
+    </div>
+    <div class="blk">
+      <div class="blk-h"><h2>Hoje</h2><span class="n" style="background:${atras?'var(--red)':'var(--ink)'};color:#fff">${hoje.length}</span><span class="hint">${atras?atras+' em atraso · ':''}vence hoje, atrasado ou marcado com ★</span></div>
+      ${hoje.length?`<div class="today-card">${hoje.map(dashRow).join('')}</div>`:`<div class="empty-ok">Nada vencendo hoje. Para puxar uma providência para cá, marque a ★ nela.</div>`}
+    </div>
+    <div class="blk">
+      <details class="next7"><summary>▸ Próximos 7 dias <span class="pv-cnt">${prox.length}</span></summary>
+        ${prox.length?prox.map(dashRow).join(''):`<div style="padding:14px;font-size:12px;color:var(--muted)">Nada agendado para os próximos 7 dias.</div>`}
+      </details>
+    </div>
+  </div>
+  <div>
+    <div class="side-card"><h3>Resumo</h3>
+      <div class="stat" onclick="S.provFilter='todas';navGo('prov','lista')"><span>Providências pendentes</span><b>${prov.length}</b></div>
+      <div class="stat" onclick="S.provFilter='semdata';navGo('prov','lista')"><span>Sem data marcada</span><b>${semData}</b></div>
+      <div class="stat" onclick="S.prospFilter='proposta';navGo('prospeccao','lista')"><span>Propostas a elaborar</span><b>${elab}</b></div>
+      <div class="stat" onclick="S.prospFilter='proposta';navGo('prospeccao','lista')"><span>Propostas aguardando retorno</span><b>${aguard}</b></div>
+      <div class="stat" onclick="navGo('casos','lista')"><span>Casos ativos</span><b>${ativosC().length}</b></div>
+    </div>
+    <div class="side-card"><h3>Monitoramento PJe</h3>
+      ${PJE.map(l=>`<a class="stat" style="color:var(--blu)" href="${l.url}" target="_blank"><span>${l.label}</span><span>↗</span></a>`).join('')}
+    </div>
+  </div>
+</div>`;
+}
+
+// ── PROVIDÊNCIAS ───────────────────────────────────────
+let _pvClosed={};
+function clientOpts(sel){
+  const c=ativosC().sort((a,b)=>a.client.localeCompare(b.client,'pt-BR')),p=ativosP().sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+  return`<option value="">Cliente…</option><optgroup label="Casos">${c.map(x=>`<option value="${x.id}" ${sel===x.id?'selected':''}>${esc(x.client)}</option>`).join('')}</optgroup><optgroup label="Prospecções">${p.map(x=>`<option value="${x.id}" ${sel===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</optgroup>`;
+}
+function bProv(){
+  const view=S.provView||'lista',f=S.provFilter||'todas';
+  let items=provItems();
+  if(S.provSearch){const q=S.provSearch.toLowerCase();items=items.filter(o=>o.t.texto.toLowerCase().includes(q)||itemName(o.c).toLowerCase().includes(q));}
+  const all=items.length;
+  if(f==='hoje')items=items.filter(isHoje);else if(f==='data')items=items.filter(o=>o.d!==null);else if(f==='semdata')items=items.filter(o=>o.d===null);
+  const F=[['todas','Todas'],['hoje','★ Hoje e atrasadas'],['data','Com data'],['semdata','Sem data']];
+  const bar=`<div class="top-bar">
+    <div class="filters">${F.map(([id,l])=>`<button class="fbtn${f===id?' on':''}" onclick="S.provFilter='${id}';render()">${l}</button>`).join('')}</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input placeholder="Buscar providência ou cliente…" value="${esc(S.provSearch||'')}" onchange="S.provSearch=this.value;render()" style="padding:7px 11px;border:1px solid var(--line2);border-radius:var(--r);font-family:inherit;font-size:12px;width:220px">
+      <div class="seg"><button class="${view==='lista'?'on':''}" onclick="S.provView='lista';render()">Por cliente</button><button class="${view==='quadro'?'on':''}" onclick="S.provView='quadro';render()">Quadro</button></div>
+    </div></div>`;
+  const add=`<div class="pv-add">
+    <select id="pv-cli" style="max-width:220px">${clientOpts(S._pvLastCli||'')}</select>
+    <input id="pv-txt" class="grow" placeholder="Nova providência: ligar para…, examinar…, elaborar…" onkeydown="if(event.key==='Enter')addProv()">
+    <select id="pv-tipo" onchange="document.getElementById('pv-livre').style.display=this.value==='outro'?'':'none'">${tipoOpts('tarefa')}</select>
+    <input id="pv-livre" placeholder="Qual?" style="display:none;width:120px">
+    <input id="pv-data" type="date" title="Data (opcional)"><input id="pv-hora" type="time" title="Hora (opcional)" style="width:100px">
+    <button class="btn btn-pri" onclick="addProv()">Adicionar</button></div>`;
+  if(view==='quadro')return bar+add+provBoard(items);
+  const groups={};items.forEach(o=>{(groups[o.c.id]=groups[o.c.id]||{c:o.c,isP:o.isP,list:[]}).list.push(o);});
+  const gl=Object.values(groups).map(g=>{g.list.sort(provSort);g.k=provSortKey(g.list[0]);return g;}).sort((a,b)=>a.k-b.k||itemName(a.c).localeCompare(itemName(b.c),'pt-BR'));
+  const tools=gl.length?`<div style="display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:11.5px;color:var(--muted)"><span>${items.length} de ${all} providência${all!==1?'s':''} · ${gl.length} cliente${gl.length!==1?'s':''}</span><span><button class="alink" onclick="pvAll(false)">Expandir todos</button> · <button class="alink" onclick="pvAll(true)">Recolher todos</button></span></div>`:'';
+  return bar+add+tools+(gl.length?gl.map(g=>{
+    const closed=!!_pvClosed[g.c.id];const first=g.list[0];const w=whenOf(first.t,first.d);
+    return`<div class="pv-group">
+      <div class="pv-gh" onclick="pvToggle('${g.c.id}')">
+        <span class="pv-caret">${closed?'▸':'▾'}</span>
+        <span class="pv-name">${esc(itemName(g.c))}</span>
+        ${g.isP?'<span class="chip" style="color:var(--car);background:var(--car-bg);border-color:var(--car-b)">prospecção</span>':''}
+        <span class="pv-cnt">${g.list.length}</span>
+        <span style="flex:1"></span>
+        <span style="font-size:11.5px;font-weight:700;color:${w.col}">${w.txt}</span>
+        <button class="alink" onclick="event.stopPropagation();${goItem(g.c)}">abrir ›</button>
+      </div>
+      ${closed?'':`<div class="pv-body">${g.list.map(o=>taskRow(o.c,o.t)).join('')}
+        <div class="pv-gadd"><input placeholder="+ providência para ${esc(itemName(g.c))} (Enter)" onkeydown="if(event.key==='Enter'&&this.value.trim()){quickAdd('${g.c.id}',this.value)}"></div></div>`}
+    </div>`;}).join(''):`<div class="empty"><div class="big">Nenhuma providência neste filtro</div>Use o campo acima para criar uma.</div>`);
+}
+function provSortKey(o){return o.d!==null&&o.d<=0?o.d:(o.t.foco?0.5:(o.d===null?999:o.d));}
+function pvToggle(id){_pvClosed[id]=!_pvClosed[id];render();}
+function pvAll(close){_pvClosed={};if(close)provItems().forEach(o=>_pvClosed[o.c.id]=true);render();}
+function addProv(){
+  const cid=gv('pv-cli'),txt=gv('pv-txt').trim();
+  if(!cid){alert('Escolha o cliente');return;}if(!txt){document.getElementById('pv-txt').focus();return;}
+  const c=findItem(cid);if(!c)return;if(!c.tarefas)c.tarefas=[];
+  const tipo=gv('pv-tipo')||'tarefa';
+  c.tarefas.push({id:uid(),texto:txt,tipo,tipoLivre:tipo==='outro'?gv('pv-livre').trim():'',data:gv('pv-data')||'',hora:gv('pv-hora')||'',dataInicio:'',dataFim:'',feito:false,dataFeito:''});
+  S._pvLastCli=cid;_pvClosed[cid]=false;saveData();render();
+  setTimeout(()=>{const el=document.getElementById('pv-txt');if(el)el.focus();},50);
+}
+function quickAdd(cid,txt){
+  const c=findItem(cid);if(!c)return;if(!c.tarefas)c.tarefas=[];
+  c.tarefas.push({id:uid(),texto:txt.trim(),tipo:'tarefa',data:'',hora:'',dataInicio:'',dataFim:'',feito:false,dataFeito:''});
+  saveData();render();
+}
+const ETAPAS=[['fazer','A fazer','var(--muted)'],['andamento','Em andamento','var(--blu)'],['aguardando','Aguardando terceiro','var(--ora)']];
+function etapaOf(t){return t.etapa||(t.tipo==='followup'?'aguardando':'fazer');}
+const ETAPA_CHIP={andamento:['▶ Em andamento','var(--blu)','var(--blu-bg)','var(--blu-b)'],aguardando:['⏳ Aguardando terceiro','var(--ora)','var(--ora-bg)','var(--ora-b)']};
+function chipEtapa(t){if(t.feito||(isJud(t.tipo)&&t.tipo!=='prazo'))return'';const e=ETAPA_CHIP[etapaOf(t)];if(!e)return'';return`<span class="chip" style="color:${e[1]};background:${e[2]};border-color:${e[3]}">${e[0]}</span>`;}
+function feitasRecentes(){
+  const out=[];const push=(x,isP)=>(x.tarefas||[]).forEach(t=>{if(t.feito&&!isJud(t.tipo)&&t.dataFeito&&daysSince(t.dataFeito)<=7)out.push({c:x,t,isP,d:null});});
+  ativosC().forEach(c=>push(c,false));ativosP().forEach(p=>push(p,true));
+  return out.sort((a,b)=>(b.t.dataFeito||'').localeCompare(a.t.dataFeito||''));
+}
+function provBoard(items){
+  items=[...items].sort(provSort);
+  const feitas=feitasRecentes();
+  const colFeitas=`<div class="kb-col" style="flex:1 1 0;min-width:220px"><div class="kb-col-h" style="border-left-color:var(--grn)"><span class="t" style="color:var(--grn)">Concluídas (7 dias)</span><span class="c">${feitas.length}</span></div>
+    <div class="kb-drop pv-drop" data-etapa="feito">${feitas.map(o=>`<div class="pv-card" draggable="true" data-cid="${o.c.id}" data-tid="${o.t.id}" style="opacity:.7">
+      <div class="cli">${esc(itemName(o.c))}</div><div class="tx" style="text-decoration:line-through">${esc(o.t.texto)}</div>
+      <div class="mt">${chipTipo(o.t)}<span>concluída em ${fDateShort(o.t.dataFeito)}</span></div></div>`).join('')||'<div class="kb-final">Arraste para cá para concluir. Arraste de volta para reabrir.</div>'}</div></div>`;
+  return`<div class="kb-scroll"><div class="kb" style="min-width:0;width:100%">${ETAPAS.map(([id,l,col])=>{
+    const cards=items.filter(o=>etapaOf(o.t)===id);
+    return`<div class="kb-col" style="flex:1 1 0;min-width:220px"><div class="kb-col-h" style="border-left-color:${col}"><span class="t" style="color:${col}">${l}</span><span class="c">${cards.length}</span></div>
+    <div class="kb-drop pv-drop" data-etapa="${id}">${cards.map(o=>{const w=whenOf(o.t,o.d);return`<div class="pv-card" draggable="true" data-cid="${o.c.id}" data-tid="${o.t.id}">
+      <div class="cli" onclick="${goItem(o.c)}" style="cursor:pointer">${esc(itemName(o.c))}</div>
+      <div style="display:flex;gap:7px;align-items:flex-start"><input type="checkbox" class="task-chk" title="Concluir" onchange="toggleTask('${o.c.id}','${o.t.id}',this.checked)"><div class="tx">${esc(o.t.texto)}</div></div>
+      <div class="mt">${chipTipo(o.t)}<span style="font-weight:700;color:${w.col}">${w.txt}</span><button class="star ${o.t.foco?'on':''}" onclick="toggleFoco('${o.c.id}','${o.t.id}')">${o.t.foco?'★':'☆'}</button></div>
+    </div>`;}).join('')}</div></div>`;
+  }).join('')}${colFeitas}</div></div>`;
+}
+function wireProvBoard(){
+  let drag=null;
+  document.querySelectorAll('.pv-card').forEach(card=>{
+    card.addEventListener('dragstart',e=>{drag={cid:card.dataset.cid,tid:card.dataset.tid};card.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
+    card.addEventListener('dragend',()=>card.classList.remove('dragging'));
+  });
+  document.querySelectorAll('.pv-drop').forEach(drop=>{
+    drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over');});
+    drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+    drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');if(!drag)return;
+      const c=findItem(drag.cid);const t=c&&(c.tarefas||[]).find(x=>x.id===drag.tid);
+      const alvo=drop.dataset.etapa;
+      if(t&&alvo==='feito'&&!t.feito){toggleTask(c.id,t.id,true);}
+      else if(t&&alvo!=='feito'&&(t.feito||etapaOf(t)!==alvo)){if(t.feito){t.feito=false;t.dataFeito='';if(!c.historico)c.historico=[];c.historico.unshift({id:uid(),data:hojeISO(),texto:'Reaberta: '+t.texto});}t.etapa=alvo;saveData();render();}
+      drag=null;});
+  });
+}
+
+// ── TAREFAS: linha, edição, inclusão ───────────────────
+let _openSub={};
+function toggleFoco(cid,tid){const c=findItem(cid);const t=c&&(c.tarefas||[]).find(x=>x.id===tid);if(!t)return;t.foco=!t.foco;saveData();render();}
+function toggleSubOpen(tid){_openSub[tid]=!_openSub[tid];render();setTimeout(()=>{const el=document.getElementById('sub-new-'+tid);if(el)el.focus();},40);}
+function addSub(cid,tid){const c=findItem(cid);const t=c&&(c.tarefas||[]).find(x=>x.id===tid);if(!t)return;const v=gv('sub-new-'+tid).trim();if(!v)return;if(!t.sub)t.sub=[];t.sub.push({id:uid(),texto:v,feito:false});saveData();render();setTimeout(()=>{const el=document.getElementById('sub-new-'+tid);if(el)el.focus();},40);}
+function toggleSub(cid,tid,sid,ch){const c=findItem(cid);const t=c&&(c.tarefas||[]).find(x=>x.id===tid);if(!t||!t.sub)return;const s=t.sub.find(x=>x.id===sid);if(s){s.feito=ch;saveData();render();}}
+function delSub(cid,tid,sid){const c=findItem(cid);const t=c&&(c.tarefas||[]).find(x=>x.id===tid);if(!t||!t.sub)return;t.sub=t.sub.filter(x=>x.id!==sid);saveData();render();}
+function taskRow(c,t){
+  if(_editTaskId===t.id)return taskEditRow(c,t);
+  const meta=TASK_TIPOS[t.tipo]||TASK_TIPOS.tarefa;
+  const d=t.data?daysTo(t.data):null;const over=!t.feito&&d!==null&&d<0;
+  let borderCol=meta.color||'var(--line2)';let bg=meta.jud?(meta.bg||''):'';
+  if(over){borderCol='var(--red)';bg='var(--red-bg)';}else if(!t.feito&&d===0&&!meta.jud){borderCol='var(--ora)';bg='var(--ora-bg)';}
+  else if(!t.feito&&t.foco&&!meta.jud){bg='#fffaeb';}
+  const rowStyle=`border-left:3px solid ${borderCol};${bg?'background:'+bg+';':''}${t.feito?'opacity:.55;':''}`;
+  const janP=t.tipo==='prazo'&&t.dataInicio,janJ=t.tipo==='julg_virt'&&t.dataFim;
+  const hora=t.hora?` <span class="task-time">${t.hora}</span>`:'';
+  let dateHtml='';
+  if(t.data){
+    const dc=over?'over':meta.jud?'jud':d!==null&&d>=0&&d<=7?'urg':'';
+    const rel=d!==null&&!t.feito?' · '+(d<0?Math.abs(d)+'d atraso':d===0?'hoje':d===1?'amanhã':d+'d'):'';
+    if(janP)dateHtml=`<span style="font-size:10px;color:var(--muted)">abre ${fDateShort(t.dataInicio)},</span> <span class="task-date ${dc}">fatal ${fDate(t.data)}${rel}</span>${hora}`;
+    else if(janJ)dateHtml=`<span class="task-date ${dc}">sessão de ${fDateShort(t.data)} a ${fDateShort(t.dataFim)}${rel}</span>`;
+    else dateHtml=`<span class="task-date ${dc}">${fDate(t.data)}${rel}</span>${hora}`;
+  }else if(t.hora)dateHtml=hora;
+  const subs=t.sub||[];const sd=subs.filter(s=>s.feito).length;const open=!!_openSub[t.id];
+  const subBtn=(subs.length||!t.feito)?`<button class="sub-btn ${subs.length&&sd===subs.length?'done':''}" onclick="toggleSubOpen('${t.id}')" title="Itens da tarefa">☑ ${subs.length?sd+'/'+subs.length:'itens'}</button>`:'';
+  const subList=open?`<div class="sub-list">${subs.map(s=>`<div class="sub-it ${s.feito?'ok':''}"><input type="checkbox" ${s.feito?'checked':''} onchange="toggleSub('${c.id}','${t.id}','${s.id}',this.checked)"><span style="flex:1">${esc(s.texto)}</span><button class="task-x" onclick="delSub('${c.id}','${t.id}','${s.id}')">×</button></div>`).join('')}
+    <div class="sub-new"><input id="sub-new-${t.id}" placeholder="+ item (ex.: procuração, guia, petição) e Enter" onkeydown="if(event.key==='Enter')addSub('${c.id}','${t.id}')"></div></div>`:'';
+  const star=!meta.jud&&!t.feito?`<button class="star ${t.foco?'on':''}" title="${t.foco?'Tirar de hoje':'Fazer hoje'}" onclick="toggleFoco('${c.id}','${t.id}')">${t.foco?'★':'☆'}</button>`:'';
+  return`<div class="task" data-tid="${t.id}" style="${rowStyle}">
+    <input type="checkbox" class="task-chk" ${t.feito?'checked':''} onchange="toggleTask('${c.id}','${t.id}',this.checked)">
+    <div class="task-c">
+      <div class="task-txt" style="${t.feito?'text-decoration:line-through':''}">${esc(t.texto)}</div>
+      <div class="task-meta">${chipTipo(t)}${chipEtapa(t)}${dateHtml}${t.data&&!t.feito?`<a href="${gcalTask(c,t)}" target="_blank" class="mini-cal" style="padding:1px 6px">Agenda</a>`:''}${subBtn}</div>
+      ${subList}
+    </div>
+    <div style="display:flex;gap:1px;flex-shrink:0;align-items:flex-start">${star}
+      <button class="task-x" onclick="startTaskEdit('${c.id}','${t.id}')" title="Editar">✎</button>
+      <button class="task-x" onclick="delTask('${c.id}','${t.id}')" title="Remover">×</button>
+    </div>
+  </div>`;
+}
+function janelaLbls(tipo){return tipo==='prazo'?['fatal','abertura',true]:tipo==='julg_virt'?['início','fim',true]:['data','',false];}
+function taskEditRow(c,t){
+  const meta=TASK_TIPOS[t.tipo]||TASK_TIPOS.tarefa;const[l1,l2,tem]=janelaLbls(t.tipo);
+  const xval=t.tipo==='prazo'?(t.dataInicio||''):t.tipo==='julg_virt'?(t.dataFim||''):'';
+  const inp='padding:6px 9px;border:1px solid var(--line2);border-radius:var(--r);font-family:inherit;font-size:11.5px;background:#fff';
+  return`<div class="task" data-tid="${t.id}" style="border-left:3px solid ${meta.color};background:var(--paper2);flex-wrap:wrap;gap:8px">
+    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:flex-end;width:100%">
+      <input id="et-txt-${t.id}" value="${esc(t.texto)}" placeholder="Texto da providência" style="flex:1;min-width:170px;${inp}" onkeydown="if(event.key==='Enter')saveTaskEdit('${c.id}','${t.id}')">
+      <select id="et-tipo-${t.id}" onchange="toggleEtJanela('${t.id}')" style="${inp}">${tipoOpts(t.tipo)}</select>
+      <input id="et-livre-${t.id}" value="${esc(t.tipoLivre||'')}" placeholder="Qual?" style="width:120px;${inp};display:${t.tipo==='outro'?'':'none'}">
+      <span style="display:flex;flex-direction:column;gap:2px"><span id="et-data-lbl-${t.id}" style="font-size:9px;color:var(--faint)">${l1}</span><input type="date" id="et-data-${t.id}" value="${t.data||''}" style="width:128px;${inp}"></span>
+      <span id="et-x-wrap-${t.id}" style="display:${tem?'flex':'none'};flex-direction:column;gap:2px"><span id="et-x-lbl-${t.id}" style="font-size:9px;color:var(--faint)">${l2}</span><input type="date" id="et-x-${t.id}" value="${xval}" style="width:128px;${inp}"></span>
+      <span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:9px;color:var(--faint)">hora</span><input type="time" id="et-hora-${t.id}" value="${t.hora||''}" style="width:96px;${inp}"></span>
+      ${meta.jud&&t.tipo!=='prazo'?'':`<span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:9px;color:var(--faint)">andamento</span><select id="et-etapa-${t.id}" style="${inp}">${ETAPAS.map(([id,l])=>`<option value="${id}" ${etapaOf(t)===id?'selected':''}>${l}</option>`).join('')}</select></span>`}
+      <button class="btn btn-pri btn-sm" onclick="saveTaskEdit('${c.id}','${t.id}')">Salvar</button>
+      <button class="btn btn-ghost btn-sm" onclick="cancelTaskEdit()">Cancelar</button>
+    </div>
+  </div>`;
+}
+function toggleJanelaGen(prefix,id){
+  const tipo=gv(prefix+'-tipo-'+id);const[l1,l2,tem]=janelaLbls(tipo);
+  const xw=document.getElementById(prefix+'-x-wrap-'+id),xl=document.getElementById(prefix+'-x-lbl-'+id),dl=document.getElementById(prefix+'-data-lbl-'+id),lv=document.getElementById(prefix+'-livre-'+id);
+  if(dl)dl.textContent=l1;if(xl)xl.textContent=l2;if(xw)xw.style.display=tem?'flex':'none';if(lv)lv.style.display=tipo==='outro'?'':'none';
+}
+function toggleEtJanela(tid){toggleJanelaGen('et',tid);}
+function toggleNtJanela(cid){toggleJanelaGen('nt',cid);}
+function saveTaskEdit(cid,tid){
+  const c=findItem(cid);if(!c)return;const t=(c.tarefas||[]).find(x=>x.id===tid);if(!t)return;
+  const txt=gv('et-txt-'+tid).trim();if(!txt){alert('Informe o texto');return;}
+  const tipo=gv('et-tipo-'+tid)||'tarefa';const x=gv('et-x-'+tid)||'';
+  t.texto=txt;t.tipo=tipo;t.data=gv('et-data-'+tid)||'';t.hora=gv('et-hora-'+tid)||'';
+  t.tipoLivre=tipo==='outro'?gv('et-livre-'+tid).trim():'';
+  const et=gv('et-etapa-'+tid);if(et)t.etapa=et;
+  t.dataInicio=tipo==='prazo'?x:'';t.dataFim=tipo==='julg_virt'?x:'';
+  _editTaskId=null;saveData();render();
+}
+function tasksSection(item){
+  const tks=[...(item.tarefas||[])].sort(taskSort);
+  const pend=tks.filter(t=>!t.feito),done=tks.filter(t=>t.feito);
+  return`<div class="dt-sec">
+    <div class="dt-sec-h"><h4>Providências e atos <span class="n">${pend.length}</span></h4></div>
+    <div id="task-list-${item.id}">${pend.length?pend.map(t=>taskRow(item,t)).join(''):`<p style="font-size:12px;color:var(--muted);margin-bottom:8px">Nenhuma providência pendente. Adicione abaixo.</p>`}</div>
+    <div class="task-add">
+      <input class="ta-txt" id="nt-txt-${item.id}" placeholder="Nova providência: examinar, elaborar, ligar, protocolar…" onkeydown="if(event.key==='Enter')addTask('${item.id}')">
+      <select id="nt-tipo-${item.id}" onchange="toggleNtJanela('${item.id}')">${tipoOpts('tarefa')}</select>
+      <input id="nt-livre-${item.id}" placeholder="Qual?" style="display:none;width:110px">
+      <span style="display:flex;flex-direction:column;gap:2px"><span id="nt-data-lbl-${item.id}" style="font-size:9px;color:var(--faint)">data</span><input type="date" id="nt-data-${item.id}" style="width:128px"></span>
+      <span id="nt-x-wrap-${item.id}" style="display:none;flex-direction:column;gap:2px"><span id="nt-x-lbl-${item.id}" style="font-size:9px;color:var(--faint)"></span><input type="date" id="nt-x-${item.id}" style="width:128px"></span>
+      <span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:9px;color:var(--faint)">hora</span><input type="time" id="nt-hora-${item.id}" style="width:96px"></span>
+      <button class="btn btn-pri btn-sm" onclick="addTask('${item.id}')">Adicionar</button>
+    </div>
+    ${done.length?`<div style="margin-top:12px"><button class="alink" onclick="toggleDone('${item.id}')">${_showDone[item.id]?'Ocultar':'Ver'} ${done.length} concluída${done.length>1?'s':''}</button>${_showDone[item.id]?`<div style="margin-top:6px;opacity:.7">${done.map(t=>taskRow(item,t)).join('')}</div>`:''}</div>`:''}
+  </div>`;
+}
+function addTask(cid){
+  const c=findItem(cid);if(!c)return;if(!c.tarefas)c.tarefas=[];
+  const txt=gv('nt-txt-'+cid).trim();if(!txt)return;
+  const tipo=gv('nt-tipo-'+cid)||'tarefa';const x=gv('nt-x-'+cid)||'';
+  c.tarefas.push({id:uid(),texto:txt,tipo,tipoLivre:tipo==='outro'?gv('nt-livre-'+cid).trim():'',data:gv('nt-data-'+cid)||'',hora:gv('nt-hora-'+cid)||'',
+    dataInicio:tipo==='prazo'?x:'',dataFim:tipo==='julg_virt'?x:'',feito:false,dataFeito:''});
+  saveData();render();
+  setTimeout(()=>{const el=document.getElementById('nt-txt-'+cid);if(el)el.focus();},60);
+}
+
+// ── PROSPECÇÃO: etapa nova, automações, conversão ──────
+if(!STAGES.find(s=>s.id==='examinar_docs'))STAGES.splice(2,0,{id:'examinar_docs',label:'Examinar Documentos'});
+STAGE_COLOR.examinar_docs={fg:'#0f766e',bg:'#e6f7f4',bd:'#a6e6dd'};
+function addAuto(p,key,texto,tipo,data){
+  if(!p.tarefas)p.tarefas=[];
+  if(p.tarefas.some(t=>!t.feito&&t.auto===key))return false;
+  p.tarefas.push({id:uid(),texto,tipo,auto:key,data:data||'',hora:'',dataInicio:'',dataFim:'',feito:false,dataFeito:''});return true;
+}
+function doneAuto(p,keys){
+  (p.tarefas||[]).forEach(t=>{if(!t.feito&&keys.includes(t.auto)){t.feito=true;t.dataFeito=hojeISO();if(!p.historico)p.historico=[];p.historico.unshift({id:uid(),data:t.dataFeito,texto:'✓ '+t.texto});}});
+}
+function autoStage(p,stage){
+  const msgs=[];
+  if(stage==='aguardando_docs'){if(addAuto(p,'docs','Cobrar documentos','followup',maisDias(5)))msgs.push('cobrar documentos em 5 dias');}
+  else if(stage==='examinar_docs'){doneAuto(p,['docs']);if(addAuto(p,'exam','Examinar documentos','examinar'))msgs.push('examinar documentos');}
+  else if(stage==='elaborar_proposta'){doneAuto(p,['docs','exam']);if(addAuto(p,'prop','Elaborar e enviar proposta','elab_doc'))msgs.push('elaborar e enviar proposta');}
+  else if(stage==='aguardando_retorno'){doneAuto(p,['docs','exam','prop']);if(addAuto(p,'retorno','Cobrar retorno da proposta','followup',maisDias(7)))msgs.push('cobrar retorno em 7 dias');}
+  else if(stage==='contratou'||stage==='nao_contratou'){doneAuto(p,['docs','exam','prop','retorno']);}
+  return msgs;
+}
+function setStage(p,stage,opts){
+  opts=opts||{};if(!p||p.stage===stage)return;
+  p.stage=stage;const lbl=(STAGES.find(s=>s.id===stage)||{}).label||stage;
+  if(!p.historico)p.historico=[];p.historico.unshift({id:uid(),data:hojeISO(),texto:'Etapa: '+lbl});
+  const msgs=autoStage(p,stage);
+  if(msgs.length&&!opts.silent)toast('Providência criada para '+p.name+': '+msgs.join(', ')+'.');
+  if(stage==='contratou'&&!p.casoId&&!opts.noPrompt)setTimeout(()=>{if(confirm(p.name+' contratou. Abrir o caso agora, levando providências, histórico e honorários?'))openConvert(p.id);},80);
+}
+function updSP(id,stage){const p=S.prospeccao.find(x=>x.id===id);if(p){setStage(p,stage);saveData();render();}}
+function saveProspEdit(id){
+  const p=S.prospeccao.find(x=>x.id===id);if(!p)return;
+  p.name=gv('pe-n').trim()||p.name;p.subject=gv('pe-s').trim();p.notes=gv('pe-no').trim();
+  p.followupDate=gv('pe-fu');p.lastContact=gv('pe-lc');p.tagIds=collectTagIds('pe-tag-');
+  const st=gv('pe-st');closeModal();setStage(p,st);saveData();render();
+}
+function saveProsp(){
+  const n=gv('mp-n').trim();if(!n){alert('Informe o nome');return;}
+  const p={id:uid(),name:n,stage:'',subject:gv('mp-su').trim(),notes:gv('mp-no').trim(),lastContact:gv('mp-lc'),followupDate:gv('mp-fu'),tagIds:collectTagIds('mp-tag-'),tarefas:[],historico:[],honorarios:[]};
+  S.prospeccao.push(p);S.selProsp=p.id;closeModal();setStage(p,gv('mp-s')||'fazer_contato',{noPrompt:true});saveData();render();
+}
+function openConvert(pid){
+  const p=S.prospeccao.find(x=>x.id===pid);if(!p)return;
+  openModal('caso');_mm.fromProsp=pid;
+  document.getElementById('modal-title').textContent='Abrir caso a partir da prospecção';
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||'';};
+  set('fi-c',p.name);set('fi-s',p.subject);set('fi-n',p.notes);
+  (p.tagIds||[]).forEach(id=>{const el=document.getElementById('fi-tag-'+id);if(el)el.checked=true;});
+}
+function casoForm(c){
+  return`<div class="fgrid">
+  <div class="fg"><label>Cliente</label><input id="fi-c" value="${esc(c?c.client:'')}"></div>
+  <div class="fg"><label>Tipo</label><select id="fi-t"><option value="judicial" ${!c||c.type==='judicial'?'selected':''}>Judicial</option><option value="consultivo" ${c&&c.type==='consultivo'?'selected':''}>Consultivo</option></select></div>
+  <div class="fg"><label>Tribunal</label><select id="fi-tr"><option value="">Nenhum</option>${Object.keys(TRIBUNAIS).map(t=>`<option value="${t}" ${c&&c.tribunal===t?'selected':''}>${t}</option>`).join('')}</select></div>
+  <div class="fg"><label>Número do processo</label><input id="fi-p" value="${esc(c?c.processNumber:'')}"></div>
+  <div class="fg full"><label>Assunto</label><input id="fi-s" value="${esc(c?c.subject:'')}"></div>
+  <div class="fg"><label>Status</label><select id="fi-st">${STATUS_V2.filter(s=>!s.auto).map(s=>`<option value="${s.id}" ${(c?(STATUS_ANTIGO[c.status]||c.status):'a_iniciar')===s.id?'selected':''}>${s.label}</option>`).join('')}</select></div>
+  <div class="fg"></div>
+  ${c?'':`<div class="fg"><label>Prazo judicial: abertura (opcional)</label><input id="fi-di" type="date"></div>
+  <div class="fg"><label>Prazo judicial: data fatal (opcional)</label><input id="fi-d" type="date"></div>`}
+  <div class="fg full"><label>Resumo / próximos passos</label><textarea id="fi-n" rows="3" style="resize:vertical">${esc(c?c.nextSteps:'')}</textarea></div>
+  <div class="fg full"><label>Tags</label><div style="margin-top:4px">${tagCheckboxes(c?c.tagIds||[]:[],'fi-tag-')}</div></div>
+</div>
+${c?'<p style="font-size:11px;color:var(--muted);margin-top:10px">Prazos e providências se lançam direto na ficha do caso, na seção Providências e atos.</p>':''}
+<div class="factions">
+  <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+  <button class="btn btn-pri" onclick="saveC('${c?c.id:''}')">${c?'Salvar alterações':'Criar caso'}</button>
+</div>`;
+}
+function saveC(eid){
+  const client=gv('fi-c').trim();if(!client){alert('Informe o cliente');return;}
+  const tagIds=collectTagIds('fi-tag-');
+  if(eid){
+    const c=S.casos.find(x=>x.id===eid);if(!c)return;
+    c.client=client;c.type=gv('fi-t');c.tribunal=gv('fi-tr');c.processNumber=gv('fi-p').trim();
+    c.subject=gv('fi-s').trim();c.status=gv('fi-st');c.nextSteps=gv('fi-n').trim();c.tagIds=tagIds;
+    saveData();closeModal();render();return;
+  }
+  const c={id:uid(),client,type:gv('fi-t'),tribunal:gv('fi-tr'),processNumber:gv('fi-p').trim(),subject:gv('fi-s').trim(),status:gv('fi-st'),nextSteps:gv('fi-n').trim(),tagIds,honorarios:[],tarefas:[],historico:[]};
+  const fatal=gv('fi-d');if(fatal)c.tarefas.push({id:uid(),texto:'Prazo judicial',tipo:'prazo',data:fatal,dataInicio:gv('fi-di'),dataFim:'',hora:'',feito:false,dataFeito:''});
+  const pid=_mm.fromProsp;_mm.fromProsp=null;
+  if(pid){
+    const p=S.prospeccao.find(x=>x.id===pid);
+    if(p){
+      doneAuto(p,['docs','exam','prop','retorno']);
+      c.tarefas=c.tarefas.concat(JSON.parse(JSON.stringify(p.tarefas||[])).map(t=>{delete t.auto;return t;}));
+      c.honorarios=JSON.parse(JSON.stringify(p.honorarios||[]));
+      c.historico=[{id:uid(),data:hojeISO(),texto:'Caso aberto a partir da prospecção '+p.name}].concat(JSON.parse(JSON.stringify(p.historico||[])));
+      if(p.stage!=='contratou'){p.stage='contratou';}
+      p.casoId=c.id;if(!p.historico)p.historico=[];p.historico.unshift({id:uid(),data:hojeISO(),texto:'Convertida em caso'});
+    }
+  }
+  S.casos.push(c);S.selCaso=c.id;saveData();closeModal();
+  if(pid){toast('Caso aberto. A prospecção saiu da lista de ativas.');goCaso(c.id);}else render();
+}
+function wireKanban(type){
+  _dragging=false;
+  document.querySelectorAll('.kb-card').forEach(card=>{
+    card.addEventListener('dragstart',e=>{_dragging=true;_dragId=card.dataset.id;card.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
+    card.addEventListener('dragend',()=>{card.classList.remove('dragging');setTimeout(()=>_dragging=false,50);});
+  });
+  document.querySelectorAll('.kb-drop').forEach(drop=>{
+    if(drop.classList.contains('pv-drop'))return;
+    drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over');});
+    drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+    drop.addEventListener('drop',e=>{
+      e.preventDefault();drop.classList.remove('over');
+      const ns=drop.dataset.status;if(!_dragId)return;
+      if(type==='caso'){const c=S.casos.find(x=>x.id===_dragId);
+        if(ns==='em_pauta'){toast('Em pauta é automático: lance o julgamento (presencial ou virtual) na ficha do caso.');}
+        else if(c&&c.status!==ns){c.status=ns;saveData();render();if(emPauta(c))toast('Status salvo, mas o caso segue em "Em pauta" enquanto houver julgamento pendente.');}}
+      else{const p=S.prospeccao.find(x=>x.id===_dragId);if(p&&p.stage!==ns){setStage(p,ns);saveData();render();}}
+      _dragId=null;
+    });
+  });
+}
+
+// ── UPDATE: tipos novos, hora, "hoje" ──────────────────
+const TIPO_MAP_V2={
+  prazo:'prazo',judicial:'prazo','prazo judicial':'prazo',
+  'julgamento presencial':'julg_pres','julg presencial':'julg_pres',julgamento:'julg_pres',presencial:'julg_pres','sustentação oral':'julg_pres',sustentacao:'julg_pres',
+  'julgamento virtual':'julg_virt','julg virtual':'julg_virt',virtual:'julg_virt','sessão virtual':'julg_virt','sessao virtual':'julg_virt',
+  audiencia:'audiencia','audiência':'audiencia',despacho:'despacho','audiência/despacho':'audiencia','audiencia/despacho':'audiencia',
+  tarefa:'tarefa',interna:'tarefa',
+  examinar:'examinar','examinar documentos':'examinar','análise de documentos':'examinar','analisar documentos':'examinar',
+  'elaborar peça':'elab_peca','elaborar peca':'elab_peca','peça':'elab_peca',peca:'elab_peca','petição':'elab_peca',peticao:'elab_peca','elaborar petição':'elab_peca',
+  'elaborar documento':'elab_doc',documento:'elab_doc',minuta:'elab_doc',contrato:'elab_doc',parecer:'elab_doc',
+  'reunião':'reuniao',reuniao:'reuniao','ligação':'ligacao',ligacao:'ligacao',ligar:'ligacao',contato:'ligacao',
+  followup:'followup','follow-up':'followup','follow up':'followup','cobrar retorno':'followup',cobrar:'followup',aguardando:'followup',proposta:'followup',
+  outro:'outro'
+};
+function applyTaskLike(c,field,value){
+  if(!c.tarefas)c.tarefas=[];if(!c.historico)c.historico=[];
+  if(field==='tarefa'||field==='providência'||field==='providencia'){
+    const parts=value.split('|').map(s=>s.trim());
+    const texto=parts[0]||'';const tr=(parts[1]||'tarefa').trim();const trl=tr.toLowerCase();
+    let tipo=TIPO_MAP_V2[trl];let livre='';if(!tipo){tipo='outro';livre=tr;}
+    let data='',dataInicio='',dataFim='',hora=normHora(parts[3]||'');
+    if(parts[2]){
+      let p2=parts[2];const hm=p2.match(/\s(\d{1,2}\s*[:h]\s*\d{0,2})\s*$/i);if(hm&&!hora){hora=normHora(hm[1]);p2=p2.slice(0,hm.index);}
+      const rng=p2.split(/\s+(?:a|até|-|→)\s+/);
+      if(rng.length===2){const d1=parseDate(rng[0].trim()),d2=parseDate(rng[1].trim());if(tipo==='julg_virt'){data=d1;dataFim=d2;}else{dataInicio=d1;data=d2;}}
+      else data=parseDate(p2.trim());
+    }
+    if(tipo!=='prazo')dataInicio='';if(tipo!=='julg_virt')dataFim='';
+    if(texto)c.tarefas.push({id:uid(),texto,tipo,tipoLivre:livre,data,hora,dataInicio,dataFim,feito:false,dataFeito:''});
+    return true;
+  }
+  if(field==='hoje'){const q=value.toLowerCase();const t=c.tarefas.find(x=>!x.feito&&x.texto.toLowerCase().includes(q));if(t)t.foco=true;return true;}
+  if(field==='baixa'||field==='concluir'||field==='feito'){
+    const q=value.toLowerCase();const t=c.tarefas.find(x=>!x.feito&&x.texto.toLowerCase().includes(q));
+    if(t){t.feito=true;t.dataFeito=hojeISO();c.historico.unshift({id:uid(),data:t.dataFeito,texto:'✓ '+t.texto});}
+    return true;
+  }
+  if(field==='historico'||field==='histórico'||field==='evolucao'||field==='evolução'){c.historico.unshift({id:uid(),data:hojeISO(),texto:value});return true;}
+  return false;
+}
+function applyP(p,field,value){
+  if(applyTaskLike(p,field,value))return;
+  const fm={stage:'stage','estágio':'stage',estagio:'stage',etapa:'stage',notes:'notes',subject:'subject',assunto:'subject',followup:'followupDate',lastcontact:'lastContact'};
+  const sm={
+    'fazer contato':'fazer_contato',fazer_contato:'fazer_contato','a contatar':'fazer_contato',contato:'fazer_contato',
+    'aguardando documentos':'aguardando_docs',aguardando_docs:'aguardando_docs',documentos:'aguardando_docs',docs:'aguardando_docs',
+    'examinar documentos':'examinar_docs',examinar_docs:'examinar_docs',examinar:'examinar_docs','análise':'examinar_docs',analise:'examinar_docs',
+    'elaborar proposta':'elaborar_proposta',elaborar_proposta:'elaborar_proposta',proposta:'elaborar_proposta',
+    'aguardando retorno da proposta':'aguardando_retorno',aguardando_retorno:'aguardando_retorno','aguardando retorno':'aguardando_retorno',aguardando:'aguardando_retorno','proposta enviada':'aguardando_retorno',retorno:'aguardando_retorno',
+    contratou:'contratou',fechado:'contratou','não contratou':'nao_contratou','nao contratou':'nao_contratou',nao_contratou:'nao_contratou',perdido:'nao_contratou'
+  };
+  const f=fm[field.toLowerCase()]||field;
+  if(f==='stage')setStage(p,sm[value.toLowerCase()]||value,{noPrompt:true});
+  else if(f==='followupDate'||f==='lastContact')p[f]=parseDate(value);
+  else if(f in p)p[f]=value;
+}
+function helpBody(){
+  return`<p style="font-size:12.5px;color:var(--muted);margin-bottom:12px">O Claude gera este bloco a partir das suas atualizações. Você copia e cola na barra escura no topo.</p>
+<pre>UPDATE
+caso: [nome] → tarefa: texto | tipo | data | hora
+caso: [nome] → tarefa: despacho com o relator | despacho | 01/12/2026 | 11:00
+caso: [nome] → tarefa: prazo com abertura | prazo | 19/05/2026 a 25/05/2026
+caso: [nome] → tarefa: sessão virtual | julgamento virtual | 19/05/2026 a 25/05/2026
+caso: [nome] → tarefa: ligar para o cliente | ligação
+caso: [nome] → hoje: ligar para o cliente
+caso: [nome] → baixa: ligar para o cliente
+caso: [nome] → historico: contestação protocolada
+caso: [nome] → status: encerrado
+prospecção: [nome] → etapa: examinar documentos
+prospecção: [nome] → followup: 20/06/2026</pre>
+<p style="font-size:11px;color:var(--muted);margin-top:10px"><b>tipos de trabalho:</b> tarefa · examinar documentos · elaborar peça · elaborar documento · reunião · ligação · cobrar retorno · ou qualquer outro nome (vira "Outro" com esse nome).</p>
+<p style="font-size:11px;color:var(--muted);margin-top:4px"><b>tipos judiciais:</b> prazo · julgamento presencial · julgamento virtual · audiência · despacho.</p>
+<p style="font-size:11px;color:var(--muted);margin-top:4px"><b>hoje:</b> marca a providência com ★ para aparecer no Painel de hoje.</p>
+<p style="font-size:11px;color:var(--muted);margin-top:4px"><b>status do caso:</b> a iniciar · em elaboração · aguardando terceiro · aguardando decisão · acompanhamento · encerrado. "Em pauta" é automático quando há julgamento lançado.</p>
+<p style="font-size:11px;color:var(--muted);margin-top:4px"><b>etapas da prospecção:</b> fazer contato · aguardando documentos · examinar documentos · elaborar proposta · aguardando retorno · contratou · não contratou. Cada mudança de etapa cria a providência correspondente.</p>`;
+}
+
+// ── ajustes da rodada 2 ────────────────────────────────
+const DSEM=['dom','seg','ter','qua','qui','sex','sáb'];
+function fDiaSem(d){if(!d)return'';const x=new Date(d+'T12:00:00');return String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0')+', '+DSEM[x.getDay()];}
+function relDias(d){return d<0?Math.abs(d)+'d atr.':d===0?'hoje':d===1?'amanhã':d+'d';}
+function fecharFicha(){S.selCaso=null;S.selProsp=null;S.mobileDetail=false;render();}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&(S.selCaso||S.selProsp)&&!document.getElementById('modal-main').classList.contains('open')&&(S.tab==='casos'||S.tab==='prospeccao'))fecharFicha();});
+const _setTopV2=setTop;
+setTop=function(){_setTopV2();document.documentElement.style.setProperty('--topH',document.getElementById('ubar').offsetHeight+'px');};
+function setTab(t){S.tab=t;S.editId=null;S.editHonId=null;S.editHonHid=null;_editTaskId=null;S.mobileDetail=false;S.search='';render();window.scrollTo(0,0);}
+// prospecção que contratou mas ainda não virou caso continua ativa
+function precisaCaso(p){return p.stage==='contratou'&&!p.casoId;}
+function ativosP(){return S.prospeccao.filter(p=>!['contratou','nao_contratou'].includes(p.stage)||precisaCaso(p));}
+function jaTemCaso(pid){const p=S.prospeccao.find(x=>x.id===pid);if(!p)return;p.casoId='existente';if(!p.historico)p.historico=[];p.historico.unshift({id:uid(),data:hojeISO(),texto:'Marcada como já tendo caso aberto'});saveData();render();}
+function prospList(){
+  let base=filterByTag(S.prospeccao).filter(prospMatch);
+  if(S.search)return base;
+  const f=S.prospFilter||'ativos';
+  if(f==='ativos')base=base.filter(p=>p.stage!=='nao_contratou'&&!(p.stage==='contratou'&&p.casoId));
+  else if(f==='proposta')base=base.filter(p=>['examinar_docs','elaborar_proposta','aguardando_retorno'].includes(p.stage));
+  else if(f==='contratou')base=base.filter(p=>p.stage==='contratou');
+  else if(f==='nao_contratou')base=base.filter(p=>p.stage==='nao_contratou');
+  return base;
+}
+function casoFilterList(){
+  let base=filterByTag(S.casos).filter(casoMatchesSearch);
+  if(S.search)return base;
+  if(S.filter==='ativos')base=base.filter(c=>c.status!=='encerrado');
+  else if(S.filter==='judicial')base=base.filter(c=>c.type==='judicial');
+  else if(S.filter==='consultivo')base=base.filter(c=>c.type==='consultivo');
+  else if(S.filter==='prazos')base=base.filter(c=>judTasks(c).length>0);
+  return base;
+}
+function caseRow(c){
+  const sel=S.selCaso===c.id;const hasJud=judTasks(c).length>0;
+  const pend=pendTasks(c).filter(t=>t.data).sort((a,b)=>a.data.localeCompare(b.data));
+  const jt=judTasks(c).sort((a,b)=>a.data.localeCompare(b.data))[0];
+  const nt=jt||pend[0]||null;const d=nt?daysTo(nt.data):null;
+  let cls='dd-ok';if(d!==null){if(d<0)cls='dd-over';else if(jt&&d<=7)cls='dd-jud';else if(d<=7)cls='dd-urg';}
+  const nPend=pendTasks(c).length;
+  const meta=[c.type==='consultivo'?'Consultivo':(c.tribunal||'Judicial'),c.processNumber||'',sLabel(statusEf(c)),nPend?nPend+' pendente'+(nPend>1?'s':''):''].filter(Boolean).join(' · ');
+  return`<div class="md-row ${sel?'sel':''} ${hasJud?'has-jud':''}" onclick="selectCaso('${c.id}')">
+    <div class="md-row-bar"></div>
+    <div class="md-row-c"><div class="md-row-name">${esc(c.client)}</div><div class="md-row-meta">${esc(meta)}</div>
+      ${nt?`<div class="md-row-next">${jt?'⚖ ':''}${esc(nt.texto)}</div>`:''}</div>
+    ${nt?`<div class="md-row-r"><span class="md-row-days ${cls}">${jt&&d<=7?'⚖ ':''}${relDias(d)}</span><span class="md-row-date">${fDiaSem(nt.data)}${nt.hora?' · '+nt.hora:''}</span></div>`:''}
+  </div>`;
+}
+function prospRow(p){
+  const sel=S.selProsp===p.id;const sc=STAGE_COLOR[p.stage]||STAGE_COLOR.fazer_contato;
+  const stLabel=(STAGES.find(s=>s.id===p.stage)||{}).label||p.stage;
+  const nt=pendTasks(p).filter(t=>t.data).sort((a,b)=>a.data.localeCompare(b.data))[0];const d=nt?daysTo(nt.data):null;
+  const fu=!nt&&p.followupDate?daysTo(p.followupDate):null;
+  return`<div class="md-row ${sel?'sel':''}" onclick="selectProsp('${p.id}')">
+    <div class="md-row-bar" style="background:${sc.fg};opacity:.55"></div>
+    <div class="md-row-c"><div class="md-row-name">${esc(p.name)}</div>
+      <div class="md-row-meta"><span style="color:${sc.fg};font-weight:600">${stLabel}</span>${p.subject?' · '+esc(p.subject):''}</div>
+      ${precisaCaso(p)?`<div class="md-row-next" style="color:var(--red);font-weight:600">Contratou: falta abrir o caso</div>`:nt?`<div class="md-row-next">${esc(nt.texto)}</div>`:''}</div>
+    ${nt?`<div class="md-row-r"><span class="md-row-days ${d<0?'dd-over':d<=7?'dd-urg':'dd-ok'}">${relDias(d)}</span><span class="md-row-date">${fDiaSem(nt.data)}</span></div>`
+      :fu!==null?`<div class="md-row-r"><span class="md-row-days ${fu<=0?'dd-over':'dd-ok'}">follow-up</span><span class="md-row-date">${fDiaSem(p.followupDate)}</span></div>`:''}
+  </div>`;
+}
+
+// ── status dos casos: "com quem está a bola" ───────────
+const STATUS_V2=[
+  {id:'a_iniciar',label:'A iniciar',color:'var(--muted)',badge:'b-muted'},
+  {id:'em_elaboracao',label:'Em elaboração',color:'var(--blu)',badge:'b-info'},
+  {id:'aguardando',label:'Aguardando terceiro',color:'var(--ora)',badge:'b-warn'},
+  {id:'aguardando_decisao',label:'Aguardando decisão',color:'var(--car)',badge:'b-muted'},
+  {id:'em_pauta',label:'Em pauta',color:'var(--jud)',badge:'b-danger',auto:true},
+  {id:'acompanhamento',label:'Acompanhamento',color:'#0f766e',badge:'b-muted'},
+  {id:'encerrado',label:'Encerrado',color:'var(--grn)',badge:'b-success'},
+];
+const STATUS_ANTIGO={em_andamento:'em_elaboracao',liminar:'aguardando_decisao',recurso:'aguardando_decisao'};
+CASO_COLS.splice(0,CASO_COLS.length,...STATUS_V2.map(s=>({id:s.id,label:s.label,color:s.color})));
+function sLabel(s){const x=STATUS_V2.find(y=>y.id===(STATUS_ANTIGO[s]||s));return x?x.label:(s||'Em elaboração');}
+function sBadge(s){const x=STATUS_V2.find(y=>y.id===(STATUS_ANTIGO[s]||s));return x?x.badge:'b-muted';}
+function emPauta(c){return c.status!=='encerrado'&&pendTasks(c).some(t=>t.tipo==='julg_pres'||t.tipo==='julg_virt');}
+function statusEf(c){return emPauta(c)?'em_pauta':(STATUS_ANTIGO[c.status]||c.status||'em_elaboracao');}
+const _migrateV1=migrate;
+migrate=function(){
+  let ch=_migrateV1();
+  S.casos.forEach(c=>{if(STATUS_ANTIGO[c.status]){if(!c.statusAnterior)c.statusAnterior=c.status;c.status=STATUS_ANTIGO[c.status];ch=true;}});
+  return ch;
+};
+function applyC(c,field,value){
+  if(applyTaskLike(c,field,value))return;
+  const sm={'a iniciar':'a_iniciar','em elaboração':'em_elaboracao','em elaboracao':'em_elaboracao',elaboração:'em_elaboracao','em andamento':'em_elaboracao',andamento:'em_elaboracao',
+    'aguardando terceiro':'aguardando',aguardando:'aguardando','aguardando decisão':'aguardando_decisao','aguardando decisao':'aguardando_decisao',concluso:'aguardando_decisao',
+    acompanhamento:'acompanhamento',encerrado:'encerrado'};
+  const fm={status:'status',nextsteps:'nextSteps',providencias:'nextSteps','providências':'nextSteps',resumo:'nextSteps',processnumber:'processNumber',processo:'processNumber',subject:'subject',assunto:'subject',tribunal:'tribunal'};
+  const f=fm[field]||field;
+  if(f==='status'){const v=sm[value.toLowerCase()];if(v)c.status=v;}
+  else if(field==='deadline'||field==='prazo'){c.tarefas.push({id:uid(),texto:'Prazo judicial',tipo:'prazo',data:parseDate(value),dataInicio:'',dataFim:'',hora:'',feito:false,dataFeito:''});}
+  else if(f in c)c[f]=value;
+}
+
+// ── prospecção: lista em blocos por etapa ──────────────
+const ORDEM_ETAPA=['aguardando_retorno','elaborar_proposta','examinar_docs','aguardando_docs','fazer_contato','contratou','nao_contratou'];
+function grupoP(p){return precisaCaso(p)?'_abrir':p.stage;}
+function urgP(p){
+  const nt=pendTasks(p).filter(t=>t.data).map(t=>daysTo(t.data));const fu=p.followupDate?daysTo(p.followupDate):null;
+  const v=[...nt,fu].filter(x=>x!==null);return v.length?Math.min(...v):999;
+}
+function sortP(arr){
+  const ord=g=>g==='_abrir'?-1:(ORDEM_ETAPA.indexOf(g)<0?99:ORDEM_ETAPA.indexOf(g));
+  return[...arr].sort((a,b)=>ord(grupoP(a))-ord(grupoP(b))||urgP(a)-urgP(b)||a.name.localeCompare(b.name,'pt-BR'));
+}
+function prospRowsAgrupadas(list){
+  let out='',atual=null;
+  sortP(list).forEach(p=>{
+    const g=grupoP(p);
+    if(g!==atual){
+      atual=g;const n=list.filter(x=>grupoP(x)===g).length;
+      const lbl=g==='_abrir'?'Contratou: falta abrir o caso':((STAGES.find(s=>s.id===g)||{}).label||g);
+      const col=g==='_abrir'?'var(--red)':(STAGE_COLOR[g]||{}).fg||'var(--muted)';
+      out+=`<div class="md-group-h" style="color:${col};font-size:11px;padding:12px 18px 6px;border-bottom:1px solid var(--line);background:#fbfaf7">${lbl} · ${n}</div>`;
+    }
+    out+=prospRow(p);
+  });
+  return out;
+}
+
+// ══ HONORÁRIOS V2 ══════════════════════════════════════
+// Vários honorários por cliente (pro-labore e êxito), valor fixo ou percentual,
+// parcelamento, divisão com parceiros, despesas e aviso de NF a emitir.
+function parcSum(h){return(h.parcelas||[]).reduce((s,p)=>s+(+p.valor||0),0);}
+function pctParc(h){return(h.parceiros||[]).reduce((s,p)=>s+(+p.pct||0),0);}
+function minhaFr(h){return Math.max(0,1-pctParc(h)/100);}
+function honTitulo(h){return(h.tipo==='proLabore'?'Pro-labore':'Êxito')+(h.descricao?': '+h.descricao:'');}
+function honCalcTxt(h){return h.calcTipo==='percentual'?`${h.percentualCausa||0}% sobre ${fCur(h.valorCausa||0)}`:'valor fixo';}
+function nfStore(){if(!S.contabil.nfPendentes)S.contabil.nfPendentes=[];return S.contabil.nfPendentes;}
+function addNfPendente(item,h,p){
+  const st=nfStore();if(st.some(x=>x.parcelaId===p.id))return;
+  st.push({id:uid(),itemId:item.id,honId:h.id,parcelaId:p.id,client:itemName(item),descricao:honTitulo(h)+(p.descricao?' · '+p.descricao:''),valor:+p.valor||0,data:p.dataPagamento||hojeISO()});
+}
+function rmNfPendente(pid){if(S.contabil.nfPendentes)S.contabil.nfPendentes=S.contabil.nfPendentes.filter(x=>x.parcelaId!==pid);}
+function toggleParcela(cid,hid,pid,checked){
+  const c=findItem(cid);if(!c)return;const h=(c.honorarios||[]).find(x=>x.id===hid);if(!h||!h.parcelas)return;
+  const p=h.parcelas.find(x=>x.id===pid);if(!p)return;
+  p.pago=checked;p.dataPagamento=checked?hojeISO():'';h.pago=getPago(h);
+  if(checked){if(!isProsp(c)){addNfPendente(c,h,p);toast('Pagamento registrado. Lembrete de emitir NF criado no Contábil.');}}
+  else rmNfPendente(pid);
+  saveData();render();
+}
+function ativarGatilho(cid,hid){const c=findItem(cid);if(!c)return;const h=(c.honorarios||[]).find(x=>x.id===hid);if(!h)return;h.gatilhoAtivado=true;h.gatilhoData=hojeISO();saveData();render();}
+function delHon(cid,hid){const c=findItem(cid);if(!c)return;if(!confirm('Remover este honorário e suas parcelas?'))return;c.honorarios=(c.honorarios||[]).filter(h=>h.id!==hid);saveData();render();}
+function startHonEdit(cid,hid){openHonModal(cid,hid);}
+function openHonEdit(cid,hid){openHonModal(cid,hid);}
+
+// ── cartão de um honorário (ficha do caso e aba Honorários) ──
+function honBlockHtml(item,h){
+  const total=+h.valor||0,pago=getPago(h),rest=total-pago,fr=minhaFr(h);
+  const parcelas=[...(h.parcelas||[])].sort((a,b)=>(a.vencimento||'zz').localeCompare(b.vencimento||'zz'));
+  const pend=h.tipo==='exito'&&h.gatilho&&!h.gatilhoAtivado;
+  return`<div class="hb">
+    <div class="hb-h">
+      <div style="min-width:0"><div class="hb-t">${esc(honTitulo(h))}</div>
+        <div class="hb-s">${honCalcTxt(h)}${pend?` · <span style="color:var(--ora);font-weight:600">gatilho: ${esc(h.gatilho)}</span>`:''}${h.gatilho&&h.gatilhoAtivado?' · <span style="color:var(--grn);font-weight:600">gatilho atingido</span>':''}</div></div>
+      <div class="hb-act">${pend?`<button class="alink" onclick="ativarGatilho('${item.id}','${h.id}')">Gatilho atingido</button>`:''}
+        <button class="iconbtn btn-sm" onclick="openHonModal('${item.id}','${h.id}')">Editar</button>
+        <button class="iconbtn del btn-sm" onclick="delHon('${item.id}','${h.id}')" title="Remover">×</button></div>
+    </div>
+    <div class="hb-grid">
+      <div><span>Contratado</span><b>${total?fCur(total):'a definir'}</b></div>
+      <div><span>Recebido</span><b style="color:var(--grn)">${fCur(pago)}</b></div>
+      <div><span>A receber</span><b style="color:${rest>0?'var(--ora)':'var(--grn)'}">${fCur(Math.max(0,rest))}</b></div>
+      ${(h.parceiros||[]).length?`<div><span>Minha parte (${Math.round(fr*1000)/10}%)</span><b>${fCur(total*fr)}</b></div>`:''}
+    </div>
+    ${(h.parceiros||[]).length?`<div class="hb-parc">${h.parceiros.map(p=>`${esc(p.nome||'Parceiro')}: ${p.pct||0}% = ${fCur(total*(+p.pct||0)/100)}`).join(' · ')}</div>`:''}
+    ${parcelas.length?`<div class="hb-pl">${parcelas.map(p=>{const d=p.vencimento?daysTo(p.vencimento):null;const late=!p.pago&&d!==null&&d<0;
+      return`<label class="hb-p ${p.pago?'ok':late?'late':''}"><input type="checkbox" ${p.pago?'checked':''} onchange="toggleParcela('${item.id}','${h.id}','${p.id}',this.checked)">
+        <span class="d">${esc(p.descricao||'Parcela')}</span><span class="v">${p.vencimento?(p.pago?'pago '+fDateShort(p.dataPagamento||p.vencimento):(late?'venceu ':'vence ')+fDateShort(p.vencimento)):'sem vencimento'}</span><b>${fCur(p.valor)}</b></label>`;}).join('')}</div>`:''}
+    ${total&&parcelas.length&&Math.abs(parcSum(h)-total)>0.5?`<div class="hb-warn">As parcelas somam ${fCur(parcSum(h))}, diferente do contratado (${fCur(total)}).</div>`:''}
+    ${h.obs?`<div class="hb-obs">${esc(h.obs)}</div>`:''}
+  </div>`;
+}
+function honSection(item,estimate){
+  const hons=item.honorarios||[];let rest=0;hons.forEach(h=>rest+=(+h.valor||0)-getPago(h));
+  return`<div class="dt-sec">
+    <div class="dt-sec-h"><h4>Honorários${estimate?' <span style="font-weight:400;color:var(--muted);font-size:11px">· estimativa / negociação</span>':''}</h4><button class="btn btn-ghost btn-sm" onclick="openHonModal('${item.id}')">+ Lançar honorários</button></div>
+    ${hons.length?hons.map(h=>honBlockHtml(item,h)).join('')+`<p style="font-size:11.5px;font-weight:600;margin-top:6px;color:${rest>0?'var(--ora)':'var(--grn)'}">${rest>0?(estimate?'Estimado a receber: ':'A receber: ')+fCur(rest):'✓ Quitado'}</p>`
+      :`<p style="font-size:12px;color:var(--muted)">Nenhum honorário lançado. Clique em "+ Lançar honorários" para incluir pro-labore e êxito, de uma vez.</p>`}
+  </div>${estimate?'':despSection(item)}`;
+}
+
+// ── despesas do cliente ────────────────────────────────
+const ONDE={pj:'escritório (PJ)',pf:'pessoal (PF)'};
+function despStatus(d){
+  if(d.cobrar===false)return{t:'não cobrar',c:'var(--muted)'};
+  if(d.reembolsado)return{t:'reembolsada'+(d.recebidoEm?' na conta '+ONDE[d.recebidoEm]:''),c:'var(--grn)'};
+  return{t:'a cobrar do cliente',c:'var(--ora)'};
+}
+function precisaAjuste(d){return d.reembolsado&&d.recebidoEm&&d.pagoPor&&d.recebidoEm!==d.pagoPor&&!d.ajusteFeito;}
+function despSection(c){
+  const ds=c.despesas||[];const aCobrar=ds.filter(d=>d.cobrar!==false&&!d.reembolsado).reduce((s,d)=>s+(+d.valor||0),0);
+  return`<div class="dt-sec">
+    <div class="dt-sec-h"><h4>Despesas <span class="n">${ds.length}</span></h4>${aCobrar?`<span style="font-size:11.5px;font-weight:700;color:var(--ora)">A cobrar: ${fCur(aCobrar)}</span>`:''}</div>
+    ${ds.map(d=>{const st=despStatus(d);return`<div class="dsp">
+      <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:600">${esc(d.descricao)}</div>
+        <div style="font-size:11px;color:var(--muted)">${d.data?fDate(d.data)+' · ':''}paga pela conta ${ONDE[d.pagoPor]||'?'} · <span style="color:${st.c};font-weight:600">${st.t}</span>${precisaAjuste(d)?' · <span style="color:var(--red);font-weight:600">ajuste PF/PJ pendente</span>':''}</div></div>
+      <b style="font-size:12.5px">${fCur(d.valor)}</b>
+      ${d.cobrar!==false&&!d.reembolsado?`<select onchange="if(this.value)reembolsar('${c.id}','${d.id}',this.value)" style="font-size:11px;padding:4px 6px;border:1px solid var(--line2);border-radius:6px;font-family:inherit"><option value="">Cliente reembolsou em…</option><option value="pj">conta do escritório (PJ)</option><option value="pf">conta pessoal (PF)</option></select>`:''}
+      <button class="task-x" onclick="delDesp('${c.id}','${d.id}')" title="Remover">×</button></div>`;}).join('')}
+    <div class="task-add">
+      <input class="ta-txt" id="ds-txt-${c.id}" placeholder="Nova despesa: custas, cópias, viagem…">
+      <input type="number" id="ds-val-${c.id}" placeholder="Valor R$" style="width:110px">
+      <input type="date" id="ds-data-${c.id}" style="width:128px">
+      <select id="ds-pago-${c.id}"><option value="pj">Paga pelo escritório (PJ)</option><option value="pf">Paga por mim (PF)</option></select>
+      <select id="ds-cob-${c.id}"><option value="1">Cobrar do cliente</option><option value="0">Não cobrar</option></select>
+      <button class="btn btn-pri btn-sm" onclick="addDesp('${c.id}')">Adicionar</button>
+    </div>
+  </div>`;
+}
+function addDesp(cid){
+  const c=findItem(cid);if(!c)return;const t=gv('ds-txt-'+cid).trim(),v=parseFloat(gv('ds-val-'+cid))||0;
+  if(!t||!v){alert('Informe a descrição e o valor da despesa');return;}
+  if(!c.despesas)c.despesas=[];
+  c.despesas.push({id:uid(),descricao:t,valor:v,data:gv('ds-data-'+cid)||hojeISO(),pagoPor:gv('ds-pago-'+cid)||'pj',cobrar:gv('ds-cob-'+cid)!=='0',reembolsado:false,recebidoEm:'',ajusteFeito:false});
+  saveData();render();
+}
+function reembolsar(cid,did,onde){
+  const c=findItem(cid);const d=c&&(c.despesas||[]).find(x=>x.id===did);if(!d)return;
+  d.reembolsado=true;d.recebidoEm=onde;d.dataReembolso=hojeISO();
+  if(!c.historico)c.historico=[];c.historico.unshift({id:uid(),data:hojeISO(),texto:'Despesa reembolsada: '+d.descricao+' ('+fCur(d.valor)+')'});
+  if(precisaAjuste(d))toast('Reembolso caiu em conta diferente da que pagou. Ajuste PF/PJ lembrado no Contábil.');
+  saveData();render();
+}
+function delDesp(cid,did){const c=findItem(cid);if(!c||!confirm('Remover esta despesa?'))return;c.despesas=(c.despesas||[]).filter(x=>x.id!==did);saveData();render();}
+function ajusteFeito(cid,did){const c=findItem(cid);const d=c&&(c.despesas||[]).find(x=>x.id===did);if(!d)return;d.ajusteFeito=true;d.dataAjuste=hojeISO();saveData();render();}
+
+// ── janela de lançamento / edição ──────────────────────
+let _hm=null;
+function novoBloco(tipo){return{id:'',tipo:tipo||'proLabore',descricao:'',calcTipo:'fixo',valor:'',percentualCausa:'',valorCausa:'',parceiros:[],parcelas:[],gatilho:'',followupDate:'',obs:'',_nParc:'',_prim:''};}
+function openHonModal(itemId,honId){
+  const item=itemId?findItem(itemId):null;
+  let blocos;
+  if(item&&honId){const h=(item.honorarios||[]).find(x=>x.id===honId);if(!h)return;
+    blocos=[Object.assign(novoBloco(),JSON.parse(JSON.stringify(h)),{_nParc:'',_prim:''})];
+    blocos[0].calcTipo=h.calcTipo||'fixo';}
+  else blocos=[novoBloco('proLabore')];
+  _hm={itemId:itemId||'',honId:honId||'',blocos};
+  document.getElementById('modal-title').textContent=honId?'Editar honorário':'Lançar honorários';
+  renderHonModal();document.getElementById('modal-main').classList.add('open');
+}
+function hbVal(b){return b.calcTipo==='percentual'?(+b.valorCausa||0)*(+b.percentualCausa||0)/100:(+b.valor||0);}
+function renderHonModal(){
+  const box=document.querySelector('#modal-main .modal-box');if(box)box.style.maxWidth='760px';
+  const inp='padding:7px 9px;border:1px solid var(--line2);border-radius:var(--r);font-family:inherit;font-size:12px;background:#fff';
+  const cli=!_hm.itemId?`<div class="fg" style="margin-bottom:12px"><label>Cliente</label><select id="hm-cli" style="${inp}" onchange="_hm.itemId=this.value">${clientOpts('')}</select></div>`:
+    `<div style="font-size:12.5px;color:var(--muted);margin-bottom:12px">Cliente: <b style="color:var(--ink)">${esc(itemName(findItem(_hm.itemId)))}</b></div>`;
+  const blocos=_hm.blocos.map((b,i)=>{
+    const v=hbVal(b),pp=(b.parceiros||[]).reduce((s,p)=>s+(+p.pct||0),0),soma=(b.parcelas||[]).reduce((s,p)=>s+(+p.valor||0),0);
+    return`<div class="hm-b">
+      <div class="hm-bh"><b>${b.tipo==='proLabore'?'Pro-labore':'Êxito'}</b>
+        <select style="${inp}" onchange="hmSet(${i},'tipo',this.value,true)"><option value="proLabore" ${b.tipo==='proLabore'?'selected':''}>Pro-labore</option><option value="exito" ${b.tipo==='exito'?'selected':''}>Êxito</option></select>
+        <input style="${inp};flex:1" placeholder="Descrição (opcional): 1ª fase, recurso, assessoria mensal…" value="${esc(b.descricao)}" oninput="hmSet(${i},'descricao',this.value)">
+        ${_hm.blocos.length>1?`<button class="task-x" onclick="_hm.blocos.splice(${i},1);renderHonModal()" title="Tirar este bloco">×</button>`:''}
+      </div>
+      <div class="hm-row">
+        <select style="${inp}" onchange="hmSet(${i},'calcTipo',this.value,true)"><option value="fixo" ${b.calcTipo!=='percentual'?'selected':''}>Valor fixo</option><option value="percentual" ${b.calcTipo==='percentual'?'selected':''}>Percentual</option></select>
+        ${b.calcTipo==='percentual'?`<input type="number" style="${inp};width:80px" placeholder="%" value="${b.percentualCausa}" oninput="hmSet(${i},'percentualCausa',this.value)"> <span class="hm-lbl">% sobre</span>
+          <input type="number" style="${inp};width:150px" placeholder="Base R$ (causa, proveito)" value="${b.valorCausa}" oninput="hmSet(${i},'valorCausa',this.value)"> <span class="hm-lbl">= <b id="hm-v-${i}">${fCur(v)}</b></span>`
+        :`<input type="number" style="${inp};width:150px" placeholder="Valor total R$" value="${b.valor}" oninput="hmSet(${i},'valor',this.value)">`}
+      </div>
+      ${b.tipo==='exito'?`<div class="hm-row"><span class="hm-lbl">Gatilho</span><input style="${inp};flex:1" placeholder="Quando fica devido: trânsito em julgado, alvará, recebimento…" value="${esc(b.gatilho)}" oninput="hmSet(${i},'gatilho',this.value)"></div>`:''}
+      <div class="hm-sub"><div class="hm-sub-h"><span>Parceiros</span><button class="alink" onclick="_hm.blocos[${i}].parceiros.push({nome:'',pct:''});renderHonModal()">+ parceiro</button></div>
+        ${(b.parceiros||[]).map((p,j)=>`<div class="hm-row"><input style="${inp};flex:1" placeholder="Nome do parceiro" value="${esc(p.nome)}" oninput="hmPar(${i},${j},'nome',this.value)"><input type="number" style="${inp};width:80px" placeholder="%" value="${p.pct}" oninput="hmPar(${i},${j},'pct',this.value)"><span class="hm-lbl">% =</span><b class="hm-lbl" id="hm-pv-${i}-${j}">${fCur(v*(+p.pct||0)/100)}</b><button class="task-x" onclick="_hm.blocos[${i}].parceiros.splice(${j},1);renderHonModal()">×</button></div>`).join('')}
+        <div class="hm-note" id="hm-mp-${i}" style="color:${pp>100?'var(--red)':'var(--grn)'}">${(b.parceiros||[]).length?`Minha parte: ${Math.round((100-pp)*10)/10}% = ${fCur(v*(100-pp)/100)}${pp>100?' · os parceiros passam de 100%':''}`:'Sem parceiros: 100% seu.'}</div></div>
+      <div class="hm-sub"><div class="hm-sub-h"><span>Parcelas</span><button class="alink" onclick="_hm.blocos[${i}].parcelas.push({id:uid(),descricao:'Parcela '+(_hm.blocos[${i}].parcelas.length+1),valor:'',vencimento:'',pago:false});renderHonModal()">+ parcela</button></div>
+        <div class="hm-row"><span class="hm-lbl">Dividir em</span><input type="number" min="1" style="${inp};width:64px" value="${b._nParc}" oninput="hmSet(${i},'_nParc',this.value)"><span class="hm-lbl">vezes, 1º vencimento</span><input type="date" style="${inp}" value="${b._prim}" oninput="hmSet(${i},'_prim',this.value)"><span class="hm-lbl">mensal</span><button class="btn btn-ghost btn-sm" onclick="hmGerar(${i})">Gerar parcelas</button></div>
+        ${(b.parcelas||[]).map((p,j)=>`<div class="hm-row"><input style="${inp};flex:1" value="${esc(p.descricao)}" oninput="hmParc(${i},${j},'descricao',this.value)"><input type="number" style="${inp};width:120px" placeholder="Valor" value="${p.valor}" oninput="hmParc(${i},${j},'valor',this.value)"><input type="date" style="${inp}" value="${p.vencimento||''}" oninput="hmParc(${i},${j},'vencimento',this.value)"><label class="hm-lbl"><input type="checkbox" ${p.pago?'checked':''} onchange="hmParc(${i},${j},'pago',this.checked)"> pago</label><button class="task-x" onclick="_hm.blocos[${i}].parcelas.splice(${j},1);renderHonModal()">×</button></div>`).join('')}
+        <div class="hm-note" id="hm-ps-${i}" style="color:${(b.parcelas||[]).length&&Math.abs(soma-v)>0.5?'var(--ora)':'var(--muted)'}">${(b.parcelas||[]).length?`Soma das parcelas: ${fCur(soma)}${Math.abs(soma-v)>0.5?' · contratado '+fCur(v):' ✓'}`:'Sem parcelas: o valor fica como um único recebimento.'}</div></div>
+      <div class="hm-row"><span class="hm-lbl">Cobrar em</span><input type="date" style="${inp}" value="${b.followupDate||''}" oninput="hmSet(${i},'followupDate',this.value)"><input style="${inp};flex:1" placeholder="Observações" value="${esc(b.obs)}" oninput="hmSet(${i},'obs',this.value)"></div>
+    </div>`;}).join('');
+  document.getElementById('modal-body').innerHTML=cli+blocos+`<div class="factions" style="justify-content:space-between">
+    <div>${_hm.honId?'':`<button class="btn btn-ghost btn-sm" onclick="_hm.blocos.push(novoBloco('proLabore'));renderHonModal()">+ Pro-labore</button> <button class="btn btn-ghost btn-sm" onclick="_hm.blocos.push(novoBloco('exito'));renderHonModal()">+ Êxito</button>`}</div>
+    <div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-pri" onclick="saveHonModal()">Salvar</button></div></div>`;
+}
+function hmSet(i,k,v,rerender){_hm.blocos[i][k]=v;if(rerender)renderHonModal();else hmRefresh(i);}
+function hmPar(i,j,k,v){_hm.blocos[i].parceiros[j][k]=v;hmRefresh(i);}
+function hmParc(i,j,k,v){_hm.blocos[i].parcelas[j][k]=v;hmRefresh(i);}
+function hmRefresh(i){
+  const b=_hm.blocos[i];const v=hbVal(b);
+  const ev=document.getElementById('hm-v-'+i);if(ev)ev.textContent=fCur(v);
+  const pp=(b.parceiros||[]).reduce((s,p)=>s+(+p.pct||0),0);
+  (b.parceiros||[]).forEach((p,j)=>{const e=document.getElementById('hm-pv-'+i+'-'+j);if(e)e.textContent=fCur(v*(+p.pct||0)/100);});
+  const mp=document.getElementById('hm-mp-'+i);if(mp&&(b.parceiros||[]).length){mp.textContent=`Minha parte: ${Math.round((100-pp)*10)/10}% = ${fCur(v*(100-pp)/100)}${pp>100?' · os parceiros passam de 100%':''}`;mp.style.color=pp>100?'var(--red)':'var(--grn)';}
+  const ps=document.getElementById('hm-ps-'+i);const soma=(b.parcelas||[]).reduce((s,p)=>s+(+p.valor||0),0);
+  if(ps&&(b.parcelas||[]).length){ps.textContent=`Soma das parcelas: ${fCur(soma)}${Math.abs(soma-v)>0.5?' · contratado '+fCur(v):' ✓'}`;ps.style.color=Math.abs(soma-v)>0.5?'var(--ora)':'var(--muted)';}
+}
+function hmGerar(i){
+  const b=_hm.blocos[i];const n=parseInt(b._nParc)||0;const v=hbVal(b);
+  if(n<1){alert('Informe em quantas vezes dividir');return;}if(!v){alert('Informe primeiro o valor');return;}
+  const base=Math.floor(v/n*100)/100;const ult=Math.round((v-base*(n-1))*100)/100;
+  b.parcelas=[];for(let k=0;k<n;k++){let venc='';if(b._prim){const d=new Date(b._prim+'T12:00:00');d.setMonth(d.getMonth()+k);venc=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+    b.parcelas.push({id:uid(),descricao:'Parcela '+(k+1)+'/'+n,valor:k===n-1?ult:base,vencimento:venc,pago:false});}
+  renderHonModal();
+}
+function saveHonModal(){
+  const item=findItem(_hm.itemId||gv('hm-cli'));if(!item){alert('Escolha o cliente');return;}
+  for(const b of _hm.blocos){
+    if(!hbVal(b)&&!(b.tipo==='exito'&&b.calcTipo==='percentual'&&+b.percentualCausa)){alert('Informe o valor de cada honorário (ou o percentual, no êxito).');return;}
+    if((b.parceiros||[]).reduce((s,p)=>s+(+p.pct||0),0)>100){alert('Os percentuais dos parceiros passam de 100%.');return;}
+  }
+  if(!item.honorarios)item.honorarios=[];
+  _hm.blocos.forEach(b=>{
+    const isPct=b.calcTipo==='percentual';
+    const dados={tipo:b.tipo,descricao:(b.descricao||'').trim(),calcTipo:isPct?'percentual':'fixo',valor:hbVal(b),percentualCausa:isPct?+b.percentualCausa||0:0,valorCausa:isPct?+b.valorCausa||0:0,
+      parceiros:(b.parceiros||[]).filter(p=>(p.nome||'').trim()||+p.pct).map(p=>({nome:(p.nome||'').trim(),pct:+p.pct||0})),
+      gatilho:b.tipo==='exito'?(b.gatilho||'').trim():'',followupDate:b.followupDate||'',obs:(b.obs||'').trim(),
+      parcelas:(b.parcelas||[]).map(p=>({id:p.id||uid(),descricao:p.descricao||'',valor:+p.valor||0,vencimento:p.vencimento||'',pago:!!p.pago,dataPagamento:p.pago?(p.dataPagamento||hojeISO()):''}))};
+    dados.pago=dados.parcelas.length?dados.parcelas.filter(p=>p.pago).reduce((s,p)=>s+p.valor,0):(+b.pago||0);
+    let h=_hm.honId?item.honorarios.find(x=>x.id===_hm.honId):null;
+    const antes=h?new Set((h.parcelas||[]).filter(p=>p.pago).map(p=>p.id)):new Set();
+    if(h)Object.assign(h,dados);else{h=Object.assign({id:uid(),gatilhoAtivado:false,gatilhoData:''},dados);item.honorarios.push(h);}
+    if(!isProsp(item))h.parcelas.forEach(p=>{if(p.pago&&!antes.has(p.id))addNfPendente(item,h,p);});
+    (h.parcelas||[]).forEach(p=>{if(!p.pago)rmNfPendente(p.id);});
+  });
+  _hm=null;saveData();closeModal();render();toast('Honorários salvos.');
+}
+
+// ── aba Honorários ─────────────────────────────────────
+function bHon(){
+  let tPL=0,pPL=0,tEx=0,pEx=0,liq=0,liqRec=0;
+  S.casos.forEach(c=>(c.honorarios||[]).forEach(h=>{const pg=getPago(h),v=+h.valor||0;if(h.tipo==='proLabore'){tPL+=v;pPL+=pg;}else{tEx+=v;pEx+=pg;}liq+=(v-pg)*minhaFr(h);liqRec+=pg*minhaFr(h);}));
+  const hf=S.honFilter||'pendentes';
+  const tem=c=>(c.honorarios||[]).length||(c.despesas||[]).length;
+  let lista=filterByTag(S.casos).filter(c=>{
+    const hs=c.honorarios||[];const despAb=(c.despesas||[]).some(d=>d.cobrar!==false&&!d.reembolsado);
+    if(hf==='todos')return tem(c);
+    if(hf==='pendentes')return hs.some(h=>getPago(h)<(+h.valor||0))||despAb;
+    if(hf==='prolabore')return hs.some(h=>h.tipo==='proLabore'&&getPago(h)<(+h.valor||0));
+    if(hf==='exito')return hs.some(h=>h.tipo==='exito'&&getPago(h)<(+h.valor||0));
+    if(hf==='despesas')return despAb;
+    if(hf==='quitados')return hs.length&&hs.every(h=>getPago(h)>=(+h.valor||0));
+    return tem(c);
+  }).sort((a,b)=>a.client.localeCompare(b.client,'pt-BR'));
+  const prox=getAllProximasParcelas(60);
+  const HF=[['pendentes','Pendentes'],['prolabore','Pro-labore'],['exito','Êxito'],['despesas','Despesas a cobrar'],['quitados','Quitados'],['todos','Todos']];
+  const semHon=ativosC().filter(c=>!(c.honorarios||[]).length).length;
+  return`${tagFilterBanner()}<div class="dash"><div>
+  <div class="top-bar"><div class="filters">${HF.map(([id,l])=>`<button class="fbtn${hf===id?' on':''}" onclick="S.honFilter='${id}';render()">${l}</button>`).join('')}</div>
+    <button class="btn-new" onclick="openHonModal('')">+ Lançar honorários</button></div>
+  ${semHon?`<p style="font-size:11.5px;color:var(--muted);margin:-6px 0 12px">${semHon} caso${semHon>1?'s':''} ativo${semHon>1?'s':''} sem honorário lançado. Use "+ Lançar honorários" e escolha o cliente.</p>`:''}
+  ${lista.length?lista.map(c=>{
+    const hs=c.honorarios||[];let rest=0;hs.forEach(h=>rest+=(+h.valor||0)-getPago(h));
+    const despAb=(c.despesas||[]).filter(d=>d.cobrar!==false&&!d.reembolsado).reduce((s,d)=>s+(+d.valor||0),0);
+    const px=prox.find(x=>x.casoId===c.id);
+    return`<div class="hcard">
+      <div class="hc-head" onclick="goCaso('${c.id}')" title="Abrir a ficha do caso">
+        <div><div class="hcard-name">${esc(c.client)} <span style="font-size:11px;color:var(--blu);font-weight:600">abrir ›</span></div>
+          <div style="font-size:11.5px;font-weight:600;margin-top:2px;color:${rest>0?'var(--ora)':'var(--grn)'}">${rest>0?'A receber: '+fCur(rest):'✓ Honorários quitados'}${despAb?` · <span style="color:var(--ora)">despesas a cobrar: ${fCur(despAb)}</span>`:''}</div></div>
+        <div style="display:flex;gap:6px;align-items:center" onclick="event.stopPropagation()">${(c.tagIds||[]).map(id=>tagPill(id)).join('')}<button class="btn btn-pri btn-sm" onclick="openHonModal('${c.id}')">+ Lançar</button></div>
+      </div>
+      ${px&&px.parcela.vencimento?`<div class="hc-next">Próxima parcela: ${esc(px.parcela.descricao||'')} · ${fDate(px.parcela.vencimento)} · <b>${fCur(px.parcela.valor)}</b></div>`:''}
+      ${hs.map(h=>honBlockHtml(c,h)).join('')}
+    </div>`;}).join(''):`<div class="empty">Nenhum caso neste filtro.</div>`}
+  </div>
+  <div><div style="position:sticky;top:70px">
+    <div style="background:var(--ink);border-radius:var(--rl);padding:18px 20px;color:#fff;box-shadow:var(--sh2)">
+      <div style="font-size:9px;font-weight:600;letter-spacing:.6px;opacity:.55;margin-bottom:12px;text-transform:uppercase">Resumo financeiro</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;opacity:.7">Pro-labore a receber</span><b style="color:#f5d38a">${fCur(tPL-pPL)}</b></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;opacity:.7">Êxito a receber</span><b style="color:#93c5fd">${fCur(tEx-pEx)}</b></div>
+      <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(255,255,255,.12)"><span style="font-size:11px;opacity:.7">Minha parte a receber</span><b style="color:#8fe3a8">${fCur(liq)}</b></div>
+      <div style="font-size:10px;opacity:.5;margin-top:3px">já descontada a parte dos parceiros</div>
+      <div style="display:flex;justify-content:space-between;margin-top:10px"><span style="font-size:11px;opacity:.7">Já recebido (minha parte)</span><b>${fCur(liqRec)}</b></div>
+      ${prox.length?`<div style="border-top:1px solid rgba(255,255,255,.12);padding-top:12px;margin-top:12px"><div style="font-size:9px;opacity:.55;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Próximas cobranças</div>${prox.slice(0,5).map(it=>`<div onclick="goCaso('${it.casoId}')" style="display:flex;justify-content:space-between;padding:5px 0;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06)"><div><div style="font-size:11px">${esc(it.client)}</div><div style="font-size:9.5px;opacity:.55">${it.parcela.vencimento?fDate(it.parcela.vencimento):'sem data'}</div></div><b style="font-size:12px;color:${it.dl!==null&&it.dl<0?'#fca5a5':'#f5d38a'}">${fCur(it.parcela.valor)}</b></div>`).join('')}</div>`:''}
+    </div></div></div></div>`;
+}
+
+// ── aba Contábil ───────────────────────────────────────
+function ajustesPend(){const out=[];S.casos.forEach(c=>(c.despesas||[]).forEach(d=>{if(precisaAjuste(d))out.push({c,d});}));return out;}
+function nfEmitida(id){
+  const st=nfStore();const n=st.find(x=>x.id===id);if(!n)return;
+  const num=(gv('nfn-'+id)||'').trim();
+  const now=new Date();const mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  if(!S.contabil[mk])S.contabil[mk]={};if(!S.contabil[mk].nfs)S.contabil[mk].nfs=[];
+  S.contabil[mk].nfs.push({id:uid(),client:n.client,number:num,valor:n.valor});
+  S.contabil.nfPendentes=st.filter(x=>x.id!==id);saveData();render();
+}
+function nfIgnorar(id){if(!confirm('Tirar este lembrete sem registrar NF?'))return;S.contabil.nfPendentes=nfStore().filter(x=>x.id!==id);saveData();render();}
+function pendContabeis(){return nfStore().length+ajustesPend().length;}
+function bCont(){
+  const now=new Date();const mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const cd=S.contabil[mk]||{};const dl=daysTo(mk+'-20');const du=!cd.dasPago&&dl!==null&&dl<=7;
+  const chk=(lbl,f,v)=>`<div class="check-item${v?' done':''}"><input type="checkbox" id="ck-${f}" ${v?'checked':''} onchange="ckCo('${mk}','${f}',this.checked)"><label for="ck-${f}">${lbl}</label></div>`;
+  const nfs=cd.nfs||[];const pend=nfStore();const aj=ajustesPend();
+  return`<h2 style="font-size:16px;font-weight:600;margin-bottom:16px;text-transform:capitalize">${now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</h2>
+  <div class="card" style="${pend.length?'border-left:3px solid var(--ora)':''}"><h3 style="font-size:13px;font-weight:600;margin-bottom:10px">Notas fiscais a emitir <span class="pv-cnt">${pend.length}</span></h3>
+    ${pend.length?pend.map(n=>`<div class="nf-row" style="align-items:center;gap:8px"><div style="flex:1"><b>${esc(n.client)}</b> <span style="color:var(--muted)">· ${esc(n.descricao)} · recebido em ${fDate(n.data)}</span></div><b>${fCur(n.valor)}</b>
+      <input id="nfn-${n.id}" placeholder="Nº da NF" style="width:90px;padding:5px 8px;border:1px solid var(--line2);border-radius:6px;font-family:inherit;font-size:11.5px">
+      <button class="btn btn-pri btn-sm" onclick="nfEmitida('${n.id}')">Emitida</button><button class="task-x" onclick="nfIgnorar('${n.id}')" title="Tirar lembrete">×</button></div>`).join('')
+      :`<p style="font-size:12px;color:var(--muted)">Nada pendente. Quando você marcar uma parcela de honorários como paga, o lembrete aparece aqui e no Painel.</p>`}
+  </div>
+  ${aj.length?`<div class="card" style="border-left:3px solid var(--red)"><h3 style="font-size:13px;font-weight:600;margin-bottom:10px">Ajustes entre conta pessoal (PF) e do escritório (PJ) <span class="pv-cnt">${aj.length}</span></h3>
+    ${aj.map(({c,d})=>`<div class="nf-row" style="align-items:center;gap:8px"><div style="flex:1"><b>${esc(c.client)}</b> <span style="color:var(--muted)">· ${esc(d.descricao)} · paga pela conta ${ONDE[d.pagoPor]}, reembolsada na conta ${ONDE[d.recebidoEm]}</span></div><b>${fCur(d.valor)}</b><button class="btn btn-pri btn-sm" onclick="ajusteFeito('${c.id}','${d.id}')">Ajuste feito</button></div>`).join('')}
+  </div>`:''}
+  <div class="card"><h3 style="font-size:13px;font-weight:600;margin-bottom:12px">Checklist mensal</h3>
+    ${chk('NFs emitidas após recebimento','nfsEmitidas',cd.nfsEmitidas)}
+    ${chk('Categorização Conube ao longo do mês','conubeFeito',cd.conubeFeito)}
+    ${chk('Fechamento Conube (1º do próximo mês)','fechConube',cd.fechConube)}
+    <div class="das-row"><div class="check-item${cd.dasPago?' done':''}" style="border:none;padding:0"><input type="checkbox" id="ck-das" ${cd.dasPago?'checked':''} onchange="ckCo('${mk}','dasPago',this.checked)"><label for="ck-das">DAS pago (vencimento dia 20)</label></div><span style="font-size:11.5px;font-weight:700;color:${du?'var(--red)':cd.dasPago?'var(--grn)':'var(--muted)'}">${cd.dasPago?'✓ Pago':dl<0?'Venceu':du?'Urgente: '+relDias(dl):relDias(dl)}</span></div>
+  </div>
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="font-size:13px;font-weight:600">NFs emitidas este mês</h3><button class="btn btn-pri btn-sm" onclick="openModal('nf')">+ Registrar NF</button></div>
+    ${!nfs.length?`<p style="font-size:12px;color:var(--muted)">Nenhuma NF registrada.</p>`:nfs.map((nf,i)=>`<div class="nf-row"><span>${esc(nf.client)}${nf.number?' · NF '+esc(nf.number):''}</span><div style="display:flex;gap:8px;align-items:center"><span style="color:var(--muted)">${fCur(nf.valor)}</span><button class="alink del" onclick="delNF('${mk}',${i})">×</button></div></div>`).join('')}
+    ${nfs.length?`<div style="font-size:12.5px;font-weight:700;margin-top:10px">Total: ${fCur(nfs.reduce((s,n)=>s+(n.valor||0),0))}</div>`:''}
+  </div>`;
+}
+
 window.addEventListener('resize',setTop);
 init();
 </script>

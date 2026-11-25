@@ -1,0 +1,35 @@
+name: Monitor STJ
+on:
+  # toda segunda-feira, 07:00 de Brasília (10:00 UTC)
+  schedule:
+    - cron: '0 10 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+jobs:
+  coletar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Coletar processos e gerar a página
+        env:
+          # chave pública do DataJud, divulgada pelo CNJ para todos os usuários
+          # (https://datajud-wiki.cnj.jus.br/api-publica/acesso). Se houver segredo próprio, ele tem preferência.
+          DATAJUD_API_KEY: ${{ secrets.DATAJUD_API_KEY || 'cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw==' }}
+        run: python scripts/coletar_stj.py
+      - name: Gravar e republicar
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add stj/
+          if git diff --staged --quiet; then echo "Sem mudanças."; else
+            git commit -m "Monitor STJ: atualização $(date +'%d/%m/%Y %H:%M')"
+            git push
+            gh workflow run publicar.yml --ref main
+          fi

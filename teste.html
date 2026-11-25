@@ -90,7 +90,7 @@ a{color:var(--blu);text-decoration:none;}a:hover{text-decoration:underline;}
 .sec-title{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.3px;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
 .sec-hint{font-size:10.5px;color:var(--faint);font-weight:400;}
 
-/* ── PRAZO JUDICIAL — carimbo ───────────────── */
+/* ── PRAZO JUDICIAL · carimbo ───────────────── */
 .jud-stamp{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;letter-spacing:.7px;color:var(--jud);background:var(--jud-bg);border:1px solid var(--jud-b);padding:2px 7px;border-radius:4px;text-transform:uppercase;}
 
 /* ── DASHBOARD timeline ─────────────────────── */
@@ -657,7 +657,7 @@ function judTasks(c){return pendTasks(c).filter(t=>isJud(t.tipo)&&t.data);}
 // menor data judicial pendente (data = data de contagem)
 function nextPrazo(c){const j=judTasks(c).map(t=>t.data).filter(Boolean).sort();return j[0]||null;}
 function hasPrazoUrg(c){const p=nextPrazo(c);if(!p)return false;const d=daysTo(p);return d!==null&&d<=7;}
-// campo legado c.deadline foi aposentado — tudo vem das tarefas judiciais
+// campo legado c.deadline foi aposentado · tudo vem das tarefas judiciais
 
 function getPago(h){const p=h.parcelas||[];if(p.length>0)return p.filter(x=>x.pago).reduce((s,x)=>s+(x.valor||0),0);return h.pago||0;}
 function getProximaParcelaAberta(h){const p=[...(h.parcelas||[])].sort((a,b)=>(a.vencimento||'zz').localeCompare(b.vencimento||'zz'));return p.find(x=>!x.pago)||null;}
@@ -693,7 +693,7 @@ function gcalWindow(title,inicio,fatal,details){
   const d=inicio.replace(/-/g,'');
   const nx=new Date(fatal+'T12:00:00');nx.setDate(nx.getDate()+1);
   const end=nx.toISOString().slice(0,10).replace(/-/g,'');
-  const det=(details?details+' — ':'')+'Janela: '+fDate(inicio)+' até '+fDate(fatal)+' (data fatal)';
+  const det=(details?details+' · ':'')+'Janela: '+fDate(inicio)+' até '+fDate(fatal)+' (data fatal)';
   return'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent('[Escritório] '+title)+'&dates='+d+'/'+end+'&details='+encodeURIComponent(det);
 }
 
@@ -740,9 +740,9 @@ function applyUpdate(){
     }
   }
   if(ok>0){saveData();render();showFb(ok+' atualização'+(ok>1?'ões':'')+' aplicada'+(ok>1?'s':''));document.getElementById('ucmd').value='';}
-  else showFb('Nenhuma atualização'+(errs.length?' — não encontrado: '+errs[0]:''),true);
+  else showFb('Nenhuma atualização'+(errs.length?' · não encontrado: '+errs[0]:''),true);
 }
-// frentes/baixa/histórico — compartilhado entre caso e prospecção
+// frentes/baixa/histórico · compartilhado entre caso e prospecção
 function applyTaskLike(c,field,value){
   if(!c.tarefas)c.tarefas=[];if(!c.historico)c.historico=[];
   if(field==='tarefa'){
@@ -759,7 +759,7 @@ function applyTaskLike(c,field,value){
     const tipo=tipoMap[tipoRaw]||'tarefa';
     let data='',dataInicio='',dataFim='';
     if(parts[2]){
-      const rng=parts[2].split(/\s+(?:a|até|-|—|→)\s+/);
+      const rng=parts[2].split(/\s+(?:a|até|-|-|→)\s+/);
       if(rng.length===2){const d1=parseDate(rng[0].trim()),d2=parseDate(rng[1].trim());if(tipo==='julg_virt'){data=d1;dataFim=d2;}else{dataInicio=d1;data=d2;}}
       else data=parseDate(parts[2]);
     }
@@ -844,9 +844,9 @@ function bDash(){
     const janP=tk.tipo==='prazo'&&tk.dataInicio, janJ=tk.tipo==='julg_virt'&&tk.dataFim;
     const janela=janP?`<span style="color:${meta.color};font-weight:600">abre ${fDateShort(tk.dataInicio)} → fatal ${fDateShort(tk.data)}</span> · `
       :janJ?`<span style="color:${meta.color};font-weight:600">sessão ${fDateShort(tk.data)} → ${fDateShort(tk.dataFim)}</span> · `:'';
-    const cal=janP?gcalWindow(nome+' — '+tk.texto,tk.dataInicio,tk.data,proc)
-      :janJ?gcalWindow(nome+' — '+tk.texto,tk.data,tk.dataFim,proc)
-      :gcalLink(nome+' — '+tk.texto,tk.data,proc);
+    const cal=janP?gcalWindow(nome+' · '+tk.texto,tk.dataInicio,tk.data,proc)
+      :janJ?gcalWindow(nome+' · '+tk.texto,tk.data,tk.dataFim,proc)
+      :gcalLink(nome+' · '+tk.texto,tk.data,proc);
     const barCol=over?'var(--red)':meta.color;
     const itemBg=over?'background:var(--red-bg);border-color:var(--red-b);':meta.bg?`background:${meta.bg};border-color:${meta.bd};`:'';
     return`<div class="tl-item" style="border-left:4px solid ${barCol};${itemBg}" onclick="${isP?'goProsp':'goCaso'}('${c.id}')">
@@ -862,7 +862,7 @@ function bDash(){
     </div>`;
   }).join(''):`<div class="empty" style="padding:22px"><div class="big">Nenhum ato judicial pendente</div>Você está em dia com prazos, julgamentos e audiências.</div>`;
 
-  // ── outras tarefas com data (não judiciais) de casos e prospecções + honorários — 60d
+  // ── outras tarefas com data (não judiciais) de casos e prospecções + honorários · 60d
   const outros=[];
   const pushTasks=(item,isP)=>pendTasks(item).forEach(tk=>{
     if(isJud(tk.tipo)||!tk.data)return;const d=daysTo(tk.data);if(d>60)return;
@@ -875,10 +875,10 @@ function bDash(){
   const outrosHtml=outros.length?outros.map(o=>{
     const over=o.d<0,urg=o.d>=0&&o.d<=7;const cls=over?'tl-overdue':urg?'tl-urgent':o.kind==='hon'?'tl-honor':'tl-near';
     if(o.kind==='hon'){
-      return`<div class="tl-item ${cls}" onclick="goCaso('${o.it.casoId}')"><div class="tl-bar"></div><div class="tl-c"><div class="tl-lbl">Honorário — ${o.it.tipo==='proLabore'?'pro-labore':'êxito'}</div><div class="tl-main">${o.it.client}</div><div class="tl-sub">${fCur(o.it.parcela.valor)}${o.it.parcela.descricao?' · '+o.it.parcela.descricao:''}</div></div><div class="tl-r"><div class="tl-days">${over?'atr.':o.d===0?'hoje':o.d+'d'}</div></div></div>`;
+      return`<div class="tl-item ${cls}" onclick="goCaso('${o.it.casoId}')"><div class="tl-bar"></div><div class="tl-c"><div class="tl-lbl">Honorário · ${o.it.tipo==='proLabore'?'pro-labore':'êxito'}</div><div class="tl-main">${o.it.client}</div><div class="tl-sub">${fCur(o.it.parcela.valor)}${o.it.parcela.descricao?' · '+o.it.parcela.descricao:''}</div></div><div class="tl-r"><div class="tl-days">${over?'atr.':o.d===0?'hoje':o.d+'d'}</div></div></div>`;
     }
     const m2=TASK_TIPOS[o.tk.tipo]||TASK_TIPOS.tarefa;const nome=itemName(o.c);
-    return`<div class="tl-item ${cls}" onclick="${o.isP?'goProsp':'goCaso'}('${o.c.id}')"><div class="tl-bar"></div><div class="tl-c"><div class="tl-lbl">${m2.icon} ${m2.short}${o.isP?' · <span style="color:var(--faint)">prospecção</span>':''}</div><div class="tl-main">${nome}</div><div class="tl-sub">${esc(o.tk.texto)}</div></div><div class="tl-r"><div class="tl-days">${over?'atr.':o.d===0?'hoje':o.d+'d'}</div><a href="${gcalLink(nome+' — '+o.tk.texto,o.tk.data,'')}" target="_blank" onclick="event.stopPropagation()" class="mini-cal">Agenda</a></div></div>`;
+    return`<div class="tl-item ${cls}" onclick="${o.isP?'goProsp':'goCaso'}('${o.c.id}')"><div class="tl-bar"></div><div class="tl-c"><div class="tl-lbl">${m2.icon} ${m2.short}${o.isP?' · <span style="color:var(--faint)">prospecção</span>':''}</div><div class="tl-main">${nome}</div><div class="tl-sub">${esc(o.tk.texto)}</div></div><div class="tl-r"><div class="tl-days">${over?'atr.':o.d===0?'hoje':o.d+'d'}</div><a href="${gcalLink(nome+' · '+o.tk.texto,o.tk.data,'')}" target="_blank" onclick="event.stopPropagation()" class="mini-cal">Agenda</a></div></div>`;
   }).join(''):`<p style="font-size:12px;color:var(--muted);padding:4px">Nada agendado nos próximos 60 dias.</p>`;
 
   // ── tarefas sem data (a fazer) agrupadas por caso
@@ -893,7 +893,7 @@ function bDash(){
 
   return`
 <div style="margin-bottom:22px">
-  <div class="sec-title">⚖ Prazos e atos judiciais <span class="sec-hint">— prioridade máxima · clique para abrir o caso</span></div>
+  <div class="sec-title">⚖ Prazos e atos judiciais <span class="sec-hint">- prioridade máxima · clique para abrir o caso</span></div>
   <div class="tl">${judHtml}</div>
 </div>
 
@@ -903,7 +903,7 @@ function bDash(){
     <div class="tl">${outrosHtml}</div>
   </div>
   <div>
-    <div class="sec-title">Prospecção — propostas e aguardando <span class="sec-hint">${propostas.length}</span></div>
+    <div class="sec-title">Prospecção · propostas e aguardando <span class="sec-hint">${propostas.length}</span></div>
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px">
       ${propostas.length?propostas.map(p=>{const sc=STAGE_COLOR[p.stage]||STAGE_COLOR.fazer_contato;const lbl=(STAGES.find(s=>s.id===p.stage)||{}).label||p.stage;const fuV=p.followupDate&&daysTo(p.followupDate)<=0;return`<div class="tl-item" style="padding:9px 13px;border-left:4px solid ${sc.fg}" onclick="goProsp('${p.id}')"><div class="tl-c"><div class="tl-lbl" style="color:${sc.fg}">${lbl}</div><div class="tl-main" style="font-size:12.5px">${p.name}</div>${p.subject?`<div class="tl-sub">${esc(p.subject)}</div>`:''}</div>${p.followupDate?`<div class="tl-r"><span style="font-size:10.5px;font-weight:600;color:${fuV?'var(--red)':'var(--ora)'}">${fuV?'follow-up!':fDateShort(p.followupDate)}</span></div>`:''}</div>`;}).join(''):`<p style="font-size:12px;color:var(--muted)">Nenhuma proposta em elaboração ou aguardando retorno.</p>`}
     </div>
@@ -1131,9 +1131,9 @@ function taskRow(c,t){
   // janela
   const janelaPrazo=t.tipo==='prazo'&&t.dataInicio;
   const janelaJulg=t.tipo==='julg_virt'&&t.dataFim;
-  const calHref=janelaPrazo?gcalWindow(itemName(c)+' — '+t.texto,t.dataInicio,t.data,c.processNumber)
-    :janelaJulg?gcalWindow(itemName(c)+' — '+t.texto,t.data,t.dataFim,c.processNumber)
-    :gcalLink(itemName(c)+' — '+t.texto,t.data,c.processNumber);
+  const calHref=janelaPrazo?gcalWindow(itemName(c)+' · '+t.texto,t.dataInicio,t.data,c.processNumber)
+    :janelaJulg?gcalWindow(itemName(c)+' · '+t.texto,t.data,t.dataFim,c.processNumber)
+    :gcalLink(itemName(c)+' · '+t.texto,t.data,c.processNumber);
   let dateHtml='';
   if(t.data){
     const dc=over?'over':t.tipo!=='tarefa'&&t.tipo!=='followup'?'jud':urg?'urg':'';
@@ -1249,7 +1249,7 @@ function kbCard(c){
   const hasJud=judTasks(c).length>0;const p=nextPrazo(c);const d=p?daysTo(p):null;
   return`<div class="kb-card ${hasJud?'has-jud':''}" draggable="true" data-id="${c.id}" onclick="if(!_dragging)selectKbCaso('${c.id}')">
     <div class="kb-card-name">${c.client}</div>
-    <div class="kb-card-meta">${c.type==='consultivo'?'Consultivo':(c.tribunal||'—')}${c.processNumber?' · '+c.processNumber:''}</div>
+    <div class="kb-card-meta">${c.type==='consultivo'?'Consultivo':(c.tribunal||'-')}${c.processNumber?' · '+c.processNumber:''}</div>
     ${hasJud&&d!==null?`<div class="kb-card-jud"><span class="jud-stamp">⚖ ${d<0?Math.abs(d)+'d atr.':d===0?'hoje':d+'d'}</span></div>`:''}
     ${(c.tagIds||[]).length?`<div class="kb-card-tags" onclick="event.stopPropagation()">${(c.tagIds||[]).map(id=>tagPill(id)).join('')}</div>`:''}
   </div>`;
@@ -1280,12 +1280,12 @@ function casoForm(c){
   return`<div class="fgrid">
   <div class="fg"><label>Cliente</label><input id="fi-c" value="${esc(c?c.client:'')}"></div>
   <div class="fg"><label>Tipo</label><select id="fi-t"><option value="judicial" ${!c||c.type==='judicial'?'selected':''}>Judicial</option><option value="consultivo" ${c&&c.type==='consultivo'?'selected':''}>Consultivo</option></select></div>
-  <div class="fg"><label>Tribunal</label><select id="fi-tr"><option value="">—</option>${Object.keys(TRIBUNAIS).map(t=>`<option value="${t}" ${c&&c.tribunal===t?'selected':''}>${t}</option>`).join('')}</select></div>
+  <div class="fg"><label>Tribunal</label><select id="fi-tr"><option value="">-</option>${Object.keys(TRIBUNAIS).map(t=>`<option value="${t}" ${c&&c.tribunal===t?'selected':''}>${t}</option>`).join('')}</select></div>
   <div class="fg"><label>Número do processo</label><input id="fi-p" value="${esc(c?c.processNumber:'')}"></div>
   <div class="fg full"><label>Assunto</label><input id="fi-s" value="${esc(c?c.subject:'')}"></div>
   <div class="fg"><label>Status</label><select id="fi-st">${['em_andamento','aguardando','liminar','recurso','encerrado'].map(s=>`<option value="${s}" ${c&&c.status===s?'selected':''}>${sLabel(s)}</option>`).join('')}</select></div>
-  <div class="fg"><label>Prazo judicial — abertura (opcional)</label><input id="fi-di" type="date" value=""></div>
-  <div class="fg"><label>Prazo judicial — data fatal (opcional)</label><input id="fi-d" type="date" value=""></div>
+  <div class="fg"><label>Prazo judicial · abertura (opcional)</label><input id="fi-di" type="date" value=""></div>
+  <div class="fg"><label>Prazo judicial · data fatal (opcional)</label><input id="fi-d" type="date" value=""></div>
   <div class="fg full"><label>Resumo / próximos passos</label><textarea id="fi-n" rows="3" style="resize:vertical">${esc(c?c.nextSteps:'')}</textarea></div>
   <div class="fg full"><label>Tags</label><div style="margin-top:4px">${tagCheckboxes(c?c.tagIds||[]:[],'fi-tag-')}</div></div>
 </div>
@@ -1405,8 +1405,8 @@ function prospDetail(p){
     <div class="dt-sec-h"><h4>Estágio no funil</h4></div>
     <select style="width:100%;padding:9px 11px;border:1px solid var(--line2);border-radius:var(--r);font-family:inherit;font-size:13px" onchange="updSP('${p.id}',this.value)">${STAGES.map(s=>`<option value="${s.id}" ${p.stage===s.id?'selected':''}>${s.label}</option>`).join('')}</select>
     <div class="info-grid" style="margin-top:10px">
-      <div class="info-cell"><div class="k">Último contato</div><div class="v">${p.lastContact?fDate(p.lastContact)+(since!==null?' · há '+since+'d':''):'—'}</div></div>
-      <div class="info-cell" style="${fuV?'background:var(--red-bg);border-color:var(--red-b)':''}"><div class="k">Follow-up</div><div class="v" style="${fuV?'color:var(--red)':'color:var(--ora)'}">${p.followupDate?fDate(p.followupDate)+(fuV?' · vencido!':''):'—'}</div></div>
+      <div class="info-cell"><div class="k">Último contato</div><div class="v">${p.lastContact?fDate(p.lastContact)+(since!==null?' · há '+since+'d':''):'-'}</div></div>
+      <div class="info-cell" style="${fuV?'background:var(--red-bg);border-color:var(--red-b)':''}"><div class="k">Follow-up</div><div class="v" style="${fuV?'color:var(--red)':'color:var(--ora)'}">${p.followupDate?fDate(p.followupDate)+(fuV?' · vencido!':''):'-'}</div></div>
     </div>
   </div>
   ${tasksSection(p)}
@@ -1487,7 +1487,7 @@ function honCard(c,proxVenc){
       <div style="font-size:11px;color:${plRest>0||exRest>0?'var(--ora)':'var(--grn)'};font-weight:600;margin-top:2px">${plRest>0||exRest>0?'A receber: '+fCur(plRest+exRest):'✓ Quitado'}</div></div>
       <div style="display:flex;gap:6px;align-items:center">${(c.tagIds||[]).map(id=>tagPill(id)).join('')}<button class="btn btn-pri btn-sm" onclick="openModal('hon','${c.id}')">+ Lançar</button></div>
     </div>
-    ${proxAberta?`<div style="margin-bottom:10px;padding:7px 11px;background:var(--ora-bg);border:1px solid var(--ora-b);border-radius:var(--r);display:flex;justify-content:space-between;align-items:center"><span style="font-size:10.5px;color:var(--ora);font-weight:600">Próxima parcela${proxAberta.parcela.vencimento?' — '+fDate(proxAberta.parcela.vencimento):''}</span><span style="font-size:12px;font-weight:700;color:var(--ora)">${fCur(proxAberta.parcela.valor)}</span></div>`:''}
+    ${proxAberta?`<div style="margin-bottom:10px;padding:7px 11px;background:var(--ora-bg);border:1px solid var(--ora-b);border-radius:var(--r);display:flex;justify-content:space-between;align-items:center"><span style="font-size:10.5px;color:var(--ora);font-weight:600">Próxima parcela${proxAberta.parcela.vencimento?' · '+fDate(proxAberta.parcela.vencimento):''}</span><span style="font-size:12px;font-weight:700;color:var(--ora)">${fCur(proxAberta.parcela.valor)}</span></div>`:''}
     ${hs.map(h=>{
       const pago=getPago(h),total=h.valor||0,rest=total-pago;const parcelas=h.parcelas||[];const proxP=getProximaParcelaAberta(h);
       return`<div class="hdet">
@@ -1511,7 +1511,7 @@ function honCard(c,proxVenc){
 }
 function honEditForm(editingC,editingH){
   return`<div class="hedit">
-<div class="hedit-lbl">Editando: ${editingC.client} — ${editingH.tipo==='proLabore'?'Pro-labore':'Êxito'}</div>
+<div class="hedit-lbl">Editando: ${editingC.client} · ${editingH.tipo==='proLabore'?'Pro-labore':'Êxito'}</div>
 <div class="fgrid">
   <div class="fg"><label>Tipo</label><select id="he-t"><option value="proLabore" ${editingH.tipo==='proLabore'?'selected':''}>Pro-labore</option><option value="exito" ${editingH.tipo==='exito'?'selected':''}>Êxito</option></select></div>
   ${editingH.tipo==='exito'?`<div class="fg"><label>Cálculo</label><select id="he-ct"><option value="fixo" ${(editingH.calcTipo||'fixo')==='fixo'?'selected':''}>Valor fixo</option><option value="percentual" ${editingH.calcTipo==='percentual'?'selected':''}>Percentual</option></select></div>`:'<div></div>'}
@@ -1539,10 +1539,10 @@ function bCont(){
   ${chk('NFs emitidas após recebimento','nfsEmitidas',cd.nfsEmitidas)}
   ${chk('Categorização Conube ao longo do mês','conubeFeito',cd.conubeFeito)}
   ${chk('Fechamento Conube (1º do próximo mês)','fechConube',cd.fechConube)}
-  <div class="das-row"><div class="check-item${cd.dasPago?' done':''}" style="border:none;padding:0"><input type="checkbox" id="ck-das" ${cd.dasPago?'checked':''} onchange="ckCo('${mk}','dasPago',this.checked)"><label for="ck-das">DAS pago — vencimento dia 20</label></div><span style="font-size:11.5px;font-weight:700;color:${du?'var(--red)':cd.dasPago?'var(--grn)':'var(--muted)'}">${cd.dasPago?'✓ Pago':du?'Urgente: '+dl+'d':Math.max(0,dl)+' dias'}</span></div>
+  <div class="das-row"><div class="check-item${cd.dasPago?' done':''}" style="border:none;padding:0"><input type="checkbox" id="ck-das" ${cd.dasPago?'checked':''} onchange="ckCo('${mk}','dasPago',this.checked)"><label for="ck-das">DAS pago · vencimento dia 20</label></div><span style="font-size:11.5px;font-weight:700;color:${du?'var(--red)':cd.dasPago?'var(--grn)':'var(--muted)'}">${cd.dasPago?'✓ Pago':du?'Urgente: '+dl+'d':Math.max(0,dl)+' dias'}</span></div>
 </div>
 <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="font-size:13px;font-weight:600">NFs emitidas este mês</h3><button class="btn btn-pri btn-sm" onclick="openModal('nf')">+ Registrar NF</button></div>
-  ${!nfs.length?`<p style="font-size:12px;color:var(--muted)">Nenhuma NF registrada.</p>`:nfs.map((nf,i)=>`<div class="nf-row"><span>${esc(nf.client)}${nf.number?' — NF '+nf.number:''}</span><div style="display:flex;gap:8px;align-items:center"><span style="color:var(--muted)">${fCur(nf.valor)}</span><button class="alink del" onclick="delNF('${mk}',${i})">×</button></div></div>`).join('')}
+  ${!nfs.length?`<p style="font-size:12px;color:var(--muted)">Nenhuma NF registrada.</p>`:nfs.map((nf,i)=>`<div class="nf-row"><span>${esc(nf.client)}${nf.number?' · NF '+nf.number:''}</span><div style="display:flex;gap:8px;align-items:center"><span style="color:var(--muted)">${fCur(nf.valor)}</span><button class="alink del" onclick="delNF('${mk}',${i})">×</button></div></div>`).join('')}
   ${nfs.length?`<div style="font-size:12.5px;font-weight:700;margin-top:10px">Total: ${fCur(nfs.reduce((s,n)=>s+(n.valor||0),0))}</div>`:''}
 </div>`;
 }
@@ -1640,14 +1640,14 @@ prospecção: [nome] → tarefa: montar minuta | tarefa | 12/06/2026
 prospecção: [nome] → followup: 20/06/2026
 prospecção: [nome] → notes: texto</pre>
 <p style="font-size:11px;color:var(--muted);margin-top:10px"><b>tipos de tarefa:</b> prazo (judicial) · julgamento presencial · julgamento virtual · audiência/despacho · follow-up · tarefa. Cada tipo tem cor e ícone próprios no painel.</p>
-<p style="font-size:11px;color:var(--muted);margin-top:4px"><b>janelas de data:</b> no <b>prazo</b> use <b>abertura a fatal</b> (ex: 19/05/2026 a 25/05/2026) — o contador usa a data fatal, a abertura é informativa. No <b>julgamento virtual</b> use <b>início a fim</b> da sessão — o contador usa o início.</p>
+<p style="font-size:11px;color:var(--muted);margin-top:4px"><b>janelas de data:</b> no <b>prazo</b> use <b>abertura a fatal</b> (ex: 19/05/2026 a 25/05/2026) · o contador usa a data fatal, a abertura é informativa. No <b>julgamento virtual</b> use <b>início a fim</b> da sessão · o contador usa o início.</p>
 <p style="font-size:11px;color:var(--muted);margin-top:4px"><b>frentes, honorários e histórico</b> funcionam igual em casos e prospecções (basta trocar <b>caso:</b> por <b>prospecção:</b>).</p>
 <p style="font-size:11px;color:var(--muted);margin-top:4px"><b>baixa:</b> conclui a tarefa (busca por texto) e joga no histórico automaticamente.</p>
 <p style="font-size:11px;color:var(--muted);margin-top:4px"><b>status do caso:</b> em andamento · aguardando · encerrado · liminar · recurso</p>
 <p style="font-size:11px;color:var(--muted);margin-top:4px"><b>estágios da prospecção:</b> fazer contato · aguardando documentos · elaborar proposta · aguardando retorno da proposta · contratou · não contratou</p>`;
 }
 
-// ══ HONORÁRIOS — modal completo ════════════════════════
+// ══ HONORÁRIOS · modal completo ════════════════════════
 function honModalBody(){
   return`<div class="fgrid">
   <div class="fg"><label>Tipo</label><select id="mh-t" onchange="honTipoChange()"><option value="proLabore">Pro-labore</option><option value="exito">Êxito</option></select></div>
@@ -1658,9 +1658,9 @@ function honModalBody(){
   <div class="fg" id="mh-total-wrap" style="display:none"><label>Total estimado do êxito</label><input id="mh-total" type="number" readonly style="background:var(--paper);color:var(--muted)"></div>
 </div>
 <div id="mh-parceiros-wrap" style="display:none;margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><label style="font-size:11px;color:var(--muted);font-weight:500">Parceiros no êxito</label><button type="button" class="btn btn-ghost btn-sm" onclick="addParceiro()">+ Parceiro</button></div><div id="mh-parceiros-list"></div><div id="mh-minha-parte" style="margin-top:8px;padding:8px 10px;background:var(--grn-bg);border:1px solid var(--grn-b);border-radius:var(--r);font-size:12px;color:var(--grn);font-weight:500;display:none"></div></div>
-<div id="mh-gatilho-wrap" style="display:none;margin-top:12px;padding:12px;background:var(--ora-bg);border:1px solid var(--ora-b);border-radius:var(--r)"><label style="font-size:11px;color:var(--ora);font-weight:600">Gatilho do êxito — quando o valor fica devido</label><input id="mh-gatilho" placeholder="Ex: Transitado em julgado, alvará expedido, indenização recebida…" style="margin-top:6px;width:100%;padding:7px 10px;border:1px solid var(--ora-b);border-radius:var(--r);font-family:inherit;font-size:12px"></div>
+<div id="mh-gatilho-wrap" style="display:none;margin-top:12px;padding:12px;background:var(--ora-bg);border:1px solid var(--ora-b);border-radius:var(--r)"><label style="font-size:11px;color:var(--ora);font-weight:600">Gatilho do êxito · quando o valor fica devido</label><input id="mh-gatilho" placeholder="Ex: Transitado em julgado, alvará expedido, indenização recebida…" style="margin-top:6px;width:100%;padding:7px 10px;border:1px solid var(--ora-b);border-radius:var(--r);font-family:inherit;font-size:12px"></div>
 <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><label style="font-size:11px;color:var(--muted);font-weight:600">Parcelas</label><button type="button" class="btn btn-ghost btn-sm" onclick="addMParcela()">+ Parcela</button></div><div id="mh-parcelas-list"></div><p style="font-size:10px;color:var(--faint);margin-top:4px">Deixe em branco para lançar sem parcelamento.</p></div>
-<div class="fgrid" style="margin-top:10px"><div class="fg"><label>Follow-up — cobrar em</label><input id="mh-fu" type="date"></div><div class="fg full"><label>Observações</label><textarea id="mh-obs" rows="2" style="resize:vertical"></textarea></div></div>
+<div class="fgrid" style="margin-top:10px"><div class="fg"><label>Follow-up · cobrar em</label><input id="mh-fu" type="date"></div><div class="fg full"><label>Observações</label><textarea id="mh-obs" rows="2" style="resize:vertical"></textarea></div></div>
 <div class="factions"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-pri" onclick="saveHon()">Lançar</button></div>`;
 }
 function honTipoChange(){const isEx=gv('mh-t')==='exito';document.getElementById('mh-calctipo-wrap').style.display=isEx?'':'none';document.getElementById('mh-parceiros-wrap').style.display=isEx?'block':'none';const gw=document.getElementById('mh-gatilho-wrap');if(gw)gw.style.display=isEx?'block':'none';honCalcChange();}
@@ -1729,14 +1729,14 @@ function deleteTag(id){if(!confirm('Remover esta tag?'))return;S.tags=S.tags.fil
 
 // ══ EXPORT ═════════════════════════════════════════════
 function exportResume(){
-  const lines=['=== ESTADO ATUAL — ESCRITÓRIO ===','','CASOS ATIVOS:'];
+  const lines=['=== ESTADO ATUAL · ESCRITÓRIO ===','','CASOS ATIVOS:'];
   sortC(S.casos.filter(c=>c.status!=='encerrado')).forEach(c=>{
-    lines.push('• '+c.client+' ['+sLabel(c.status)+']'+(c.tribunal?' — '+c.tribunal:'')+(c.processNumber?' ('+c.processNumber+')':''));
+    lines.push('• '+c.client+' ['+sLabel(c.status)+']'+(c.tribunal?' · '+c.tribunal:'')+(c.processNumber?' ('+c.processNumber+')':''));
     judTasks(c).forEach(t=>lines.push('  ⚖ PRAZO '+fDate(t.data)+': '+t.texto));
     pendTasks(c).filter(t=>t.tipo!=='prazo').slice(0,4).forEach(t=>lines.push('  → '+t.texto+(t.data?' ('+fDate(t.data)+')':'')));
   });
   lines.push('','PROSPECÇÕES ATIVAS:');
-  S.prospeccao.filter(p=>!['fechado','perdido'].includes(p.stage)).forEach(p=>lines.push('• '+p.name+' ['+((STAGES.find(s=>s.id===p.stage)||{}).label||p.stage)+']'+(p.subject?' — '+p.subject:'')));
+  S.prospeccao.filter(p=>!['fechado','perdido'].includes(p.stage)).forEach(p=>lines.push('• '+p.name+' ['+((STAGES.find(s=>s.id===p.stage)||{}).label||p.stage)+']'+(p.subject?' · '+p.subject:'')));
   const txt=lines.join('\n');
   navigator.clipboard.writeText(txt).then(()=>alert('Copiado! Cole no Claude para sincronizar.')).catch(()=>{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert('Copiado!');});
 }
@@ -1752,7 +1752,7 @@ function migrate(){
     (c.honorarios||[]).forEach(h=>{if(!h.parcelas)h.parcelas=[];});
     // garantir campos de janela em tarefas judiciais
     c.tarefas.forEach(t=>{if(isJud(t.tipo)){if(t.dataInicio===undefined)t.dataInicio='';if(t.dataFim===undefined)t.dataFim='';}});
-    // limpar campo legado c.deadline (aposentado — resíduo de versões antigas)
+    // limpar campo legado c.deadline (aposentado · resíduo de versões antigas)
     if('deadline' in c){delete c.deadline;changed=true;}
   });
   // prospecção: migrar estágios antigos → novos e garantir arrays
@@ -1894,7 +1894,7 @@ function render(){
     const badge=c?`<span class="nav-cnt${c.hot&&!on?' hot':''}">${c.n}</span>`:'';
     const subs=on&&n.subs?n.subs.map(([v,l])=>`<button class="nav-sub${(S[n.view]||'lista')===v?' on':''}" onclick="navGo('${n.id}','${v}')">${l}</button>`).join(''):'';
     return`<button class="nav-item${on?' on':''}" onclick="navGo('${n.id}')"><span class="nav-ic">${n.ic}</span><span class="nav-lbl">${n.label}</span>${badge}</button>${subs}`;
-  }).join('')+`<div class="nav-sep"></div>`+PJE.map(l=>`<a class="nav-sub" style="padding-left:12px" href="${l.url}" target="_blank">PJe ${l.label} ↗</a>`).join('');
+  }).join('')+`<div class="nav-sep"></div>`+PJE.map(l=>`<a class="nav-sub" style="padding-left:12px" href="${l.url}" target="_blank">PJe ${l.label} ↗</a>`).join('')+`<a class="nav-sub" style="padding-left:12px" href="stj/" target="_blank">Monitor STJ ↗</a>`;
   const builders={dashboard:bDash,prov:bProv,casos:bCasos,honorarios:bHon,prospeccao:bProsp,contabil:bCont};
   const band=TESTE?`<div class="teste-band">Modo teste: você está vendo os seus dados reais, mas nada do que fizer aqui é gravado. Ao recarregar a página, tudo volta ao que está na planilha.</div>`:'';
   document.getElementById('tab-body').innerHTML=band+(builders[S.tab]||bDash)();

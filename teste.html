@@ -433,6 +433,15 @@ details.next7[open]>summary{border-bottom:1px solid var(--line);}
 .md-detail.open .dt-head{padding-right:118px;}
 .kb{width:100%;}
 .kb-col{flex:1 1 0;min-width:180px;width:auto !important;}
+/* quadros cabem na tela, sem rolagem lateral */
+.kb-scroll{overflow-x:visible;}
+.kb{min-width:0 !important;gap:8px;}
+.kb-col{min-width:0 !important;}
+.kb-col-h{padding:7px 9px;}
+.kb-col-h .t{white-space:normal;line-height:1.25;font-size:10.5px;}
+.kb-card{padding:9px 10px;}
+.kb-card-name,.kb-card-meta{white-space:normal;overflow-wrap:anywhere;}
+@media(max-width:900px){.kb-scroll{overflow-x:auto;}.kb{min-width:min-content !important;}.kb-col{min-width:200px !important;}}
 </style>
 </head>
 <body>

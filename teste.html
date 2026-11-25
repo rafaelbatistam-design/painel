@@ -456,6 +456,36 @@ details.next7[open]>summary{border-bottom:1px solid var(--line);}
   .kb-col-h{align-items:center;min-height:38px;}
   .kb-col:has(.kb-final){flex:.75 1 0;}
 }
+/* honorários v2 */
+.hb{border:1px solid var(--line);border-radius:var(--r);background:var(--paper);padding:11px 13px;margin-bottom:8px;}
+.hb-h{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;}
+.hb-t{font-size:12.5px;font-weight:700;color:var(--ink);}
+.hb-s{font-size:11px;color:var(--muted);margin-top:1px;}
+.hb-act{display:flex;gap:5px;align-items:center;flex-shrink:0;}
+.hb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-top:9px;}
+.hb-grid div{background:#fff;border:1px solid var(--line);border-radius:6px;padding:6px 9px;}
+.hb-grid span{display:block;font-size:9.5px;color:var(--faint);font-weight:600;}
+.hb-grid b{font-size:12.5px;}
+.hb-parc{font-size:11px;color:var(--car);margin-top:7px;font-weight:600;}
+.hb-pl{margin-top:8px;display:flex;flex-direction:column;gap:3px;}
+.hb-p{display:flex;align-items:center;gap:8px;font-size:11.5px;padding:5px 8px;border-radius:6px;background:#fff;border:1px solid var(--line);cursor:pointer;}
+.hb-p input{accent-color:var(--grn);width:14px;height:14px;}
+.hb-p .d{flex:1;}.hb-p .v{color:var(--muted);font-size:10.5px;}
+.hb-p.ok{background:var(--grn-bg);border-color:var(--grn-b);}.hb-p.ok .d{text-decoration:line-through;color:var(--grn);}
+.hb-p.late{background:var(--red-bg);border-color:var(--red-b);}.hb-p.late .v{color:var(--red);font-weight:600;}
+.hb-warn{font-size:11px;color:var(--ora);margin-top:6px;font-weight:600;}
+.hb-obs{font-size:11px;color:var(--muted);font-style:italic;margin-top:6px;}
+.hc-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:-4px -6px 10px;padding:6px;border-radius:8px;cursor:pointer;}
+.hc-head:hover{background:#fbfaf7;}
+.hc-next{font-size:11.5px;color:var(--ora);background:var(--ora-bg);border:1px solid var(--ora-b);border-radius:6px;padding:6px 10px;margin-bottom:8px;font-weight:600;}
+.hm-b{border:1px solid var(--line2);border-radius:var(--rl);padding:12px 14px;margin-bottom:12px;background:#fcfbf8;}
+.hm-bh{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.hm-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:6px;}
+.hm-lbl{font-size:11.5px;color:var(--muted);display:inline-flex;align-items:center;gap:4px;}
+.hm-sub{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line2);}
+.hm-sub-h{display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--ink-soft);}
+.hm-note{font-size:11px;margin-top:5px;font-weight:600;}
+.dsp{display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r);margin-bottom:6px;background:#fff;}
 </style>
 </head>
 <body>
@@ -1858,7 +1888,7 @@ function render(){
   const jud=judAlertCount();
   document.getElementById('hdr-alert').innerHTML=jud>0?`<div class="alert-pill pill-red">${jud} ${jud>1?'atos judiciais em até 7 dias':'ato judicial em até 7 dias'}</div>`:`<div class="alert-pill pill-grn">Sem prazos críticos</div>`;
   const prov=provItems();const hojeN=prov.filter(o=>isHoje(o)).length;
-  const cnt={prov:{n:prov.length,hot:hojeN>0},casos:{n:ativosC().length},prospeccao:{n:ativosP().length}};
+  const pc=pendContabeis();const cnt={prov:{n:prov.length,hot:hojeN>0},casos:{n:ativosC().length},prospeccao:{n:ativosP().length},contabil:pc?{n:pc,hot:true}:null};
   document.getElementById('tabs').innerHTML=`<div class="nav-brand">Marquez Advogados</div>`+NAV.map(n=>{
     const on=S.tab===n.id;const c=cnt[n.id];
     const badge=c?`<span class="nav-cnt${c.hot&&!on?' hot':''}">${c.n}</span>`:'';
@@ -1914,7 +1944,15 @@ function dashRow(o){
     return`<div class="dr ${o.d<0?'over':''}"><span style="width:18px;text-align:center;color:var(--grn);font-weight:700">$</span>
       <div class="dr-c"><div class="dr-txt">Receber ${esc(o.it.parcela.descricao||'parcela')}: ${fCur(o.it.parcela.valor)}</div>
       <div class="dr-meta"><span class="chip" style="color:var(--grn);background:var(--grn-bg);border-color:var(--grn-b)">Honorário ${o.it.tipo==='proLabore'?'pro-labore':'êxito'}</span><span class="dr-cli" onclick="goCaso('${o.it.casoId}')">${esc(o.it.client)}</span></div></div>
-      <div class="dr-when" style="color:${w.col}">${w.txt}</div></div>`;
+      <div class="dr-when" style="color:${w.col}">${w.txt}</div>
+      <button class="btn btn-ghost btn-sm conv-btn" onclick="toggleParcela('${o.it.casoId}','${o.it.honorarioId}','${o.it.parcela.id}',true)" title="Marcar esta parcela como paga">Recebido</button></div>`;
+  }
+  if(o.kind==='nf'){
+    const n=o.n;
+    return`<div class="dr"><span style="width:18px;text-align:center;color:var(--ora);font-weight:700">NF</span>
+      <div class="dr-c"><div class="dr-txt">Emitir nota fiscal: ${fCur(n.valor)}</div><div class="dr-meta"><span class="dr-cli" onclick="goCaso('${n.itemId}')">${esc(n.client)}</span> · ${esc(n.descricao)}</div></div>
+      <div class="dr-when" style="color:var(--ora)">recebido ${fDateShort(n.data)}</div>
+      <button class="btn btn-ghost btn-sm conv-btn" onclick="navGo('contabil')">Contábil ›</button></div>`;
   }
   if(o.kind==='conv'){
     const p=o.p;
@@ -1948,6 +1986,7 @@ function bDash(){
     const d=daysTo(p.followupDate);if(d<=0)hoje.push({kind:'fu',p,d});else if(d<=7)prox.push({kind:'fu',p,d});
   });
   S.prospeccao.filter(precisaCaso).forEach(p=>hoje.push({kind:'conv',p,d:0}));
+  nfStore().forEach(n=>hoje.push({kind:'nf',n,d:0}));
   const key=o=>o.kind==='task'?(o.d!==null&&o.d<=0?o.d:0.5):o.d;
   hoje.sort((a,b)=>key(a)-key(b)||((a.t&&a.t.hora)||'99').localeCompare((b.t&&b.t.hora)||'99'));
   prox.sort((a,b)=>a.d-b.d||((a.t&&a.t.hora)||'99').localeCompare((b.t&&b.t.hora)||'99'));
@@ -2513,6 +2552,293 @@ function prospRowsAgrupadas(list){
     out+=prospRow(p);
   });
   return out;
+}
+
+// ══ HONORÁRIOS V2 ══════════════════════════════════════
+// Vários honorários por cliente (pro-labore e êxito), valor fixo ou percentual,
+// parcelamento, divisão com parceiros, despesas e aviso de NF a emitir.
+function parcSum(h){return(h.parcelas||[]).reduce((s,p)=>s+(+p.valor||0),0);}
+function pctParc(h){return(h.parceiros||[]).reduce((s,p)=>s+(+p.pct||0),0);}
+function minhaFr(h){return Math.max(0,1-pctParc(h)/100);}
+function honTitulo(h){return(h.tipo==='proLabore'?'Pro-labore':'Êxito')+(h.descricao?': '+h.descricao:'');}
+function honCalcTxt(h){return h.calcTipo==='percentual'?`${h.percentualCausa||0}% sobre ${fCur(h.valorCausa||0)}`:'valor fixo';}
+function nfStore(){if(!S.contabil.nfPendentes)S.contabil.nfPendentes=[];return S.contabil.nfPendentes;}
+function addNfPendente(item,h,p){
+  const st=nfStore();if(st.some(x=>x.parcelaId===p.id))return;
+  st.push({id:uid(),itemId:item.id,honId:h.id,parcelaId:p.id,client:itemName(item),descricao:honTitulo(h)+(p.descricao?' · '+p.descricao:''),valor:+p.valor||0,data:p.dataPagamento||hojeISO()});
+}
+function rmNfPendente(pid){if(S.contabil.nfPendentes)S.contabil.nfPendentes=S.contabil.nfPendentes.filter(x=>x.parcelaId!==pid);}
+function toggleParcela(cid,hid,pid,checked){
+  const c=findItem(cid);if(!c)return;const h=(c.honorarios||[]).find(x=>x.id===hid);if(!h||!h.parcelas)return;
+  const p=h.parcelas.find(x=>x.id===pid);if(!p)return;
+  p.pago=checked;p.dataPagamento=checked?hojeISO():'';h.pago=getPago(h);
+  if(checked){if(!isProsp(c)){addNfPendente(c,h,p);toast('Pagamento registrado. Lembrete de emitir NF criado no Contábil.');}}
+  else rmNfPendente(pid);
+  saveData();render();
+}
+function ativarGatilho(cid,hid){const c=findItem(cid);if(!c)return;const h=(c.honorarios||[]).find(x=>x.id===hid);if(!h)return;h.gatilhoAtivado=true;h.gatilhoData=hojeISO();saveData();render();}
+function delHon(cid,hid){const c=findItem(cid);if(!c)return;if(!confirm('Remover este honorário e suas parcelas?'))return;c.honorarios=(c.honorarios||[]).filter(h=>h.id!==hid);saveData();render();}
+function startHonEdit(cid,hid){openHonModal(cid,hid);}
+function openHonEdit(cid,hid){openHonModal(cid,hid);}
+
+// ── cartão de um honorário (ficha do caso e aba Honorários) ──
+function honBlockHtml(item,h){
+  const total=+h.valor||0,pago=getPago(h),rest=total-pago,fr=minhaFr(h);
+  const parcelas=[...(h.parcelas||[])].sort((a,b)=>(a.vencimento||'zz').localeCompare(b.vencimento||'zz'));
+  const pend=h.tipo==='exito'&&h.gatilho&&!h.gatilhoAtivado;
+  return`<div class="hb">
+    <div class="hb-h">
+      <div style="min-width:0"><div class="hb-t">${esc(honTitulo(h))}</div>
+        <div class="hb-s">${honCalcTxt(h)}${pend?` · <span style="color:var(--ora);font-weight:600">gatilho: ${esc(h.gatilho)}</span>`:''}${h.gatilho&&h.gatilhoAtivado?' · <span style="color:var(--grn);font-weight:600">gatilho atingido</span>':''}</div></div>
+      <div class="hb-act">${pend?`<button class="alink" onclick="ativarGatilho('${item.id}','${h.id}')">Gatilho atingido</button>`:''}
+        <button class="iconbtn btn-sm" onclick="openHonModal('${item.id}','${h.id}')">Editar</button>
+        <button class="iconbtn del btn-sm" onclick="delHon('${item.id}','${h.id}')" title="Remover">×</button></div>
+    </div>
+    <div class="hb-grid">
+      <div><span>Contratado</span><b>${total?fCur(total):'a definir'}</b></div>
+      <div><span>Recebido</span><b style="color:var(--grn)">${fCur(pago)}</b></div>
+      <div><span>A receber</span><b style="color:${rest>0?'var(--ora)':'var(--grn)'}">${fCur(Math.max(0,rest))}</b></div>
+      ${(h.parceiros||[]).length?`<div><span>Minha parte (${Math.round(fr*1000)/10}%)</span><b>${fCur(total*fr)}</b></div>`:''}
+    </div>
+    ${(h.parceiros||[]).length?`<div class="hb-parc">${h.parceiros.map(p=>`${esc(p.nome||'Parceiro')}: ${p.pct||0}% = ${fCur(total*(+p.pct||0)/100)}`).join(' · ')}</div>`:''}
+    ${parcelas.length?`<div class="hb-pl">${parcelas.map(p=>{const d=p.vencimento?daysTo(p.vencimento):null;const late=!p.pago&&d!==null&&d<0;
+      return`<label class="hb-p ${p.pago?'ok':late?'late':''}"><input type="checkbox" ${p.pago?'checked':''} onchange="toggleParcela('${item.id}','${h.id}','${p.id}',this.checked)">
+        <span class="d">${esc(p.descricao||'Parcela')}</span><span class="v">${p.vencimento?(p.pago?'pago '+fDateShort(p.dataPagamento||p.vencimento):(late?'venceu ':'vence ')+fDateShort(p.vencimento)):'sem vencimento'}</span><b>${fCur(p.valor)}</b></label>`;}).join('')}</div>`:''}
+    ${total&&parcelas.length&&Math.abs(parcSum(h)-total)>0.5?`<div class="hb-warn">As parcelas somam ${fCur(parcSum(h))}, diferente do contratado (${fCur(total)}).</div>`:''}
+    ${h.obs?`<div class="hb-obs">${esc(h.obs)}</div>`:''}
+  </div>`;
+}
+function honSection(item,estimate){
+  const hons=item.honorarios||[];let rest=0;hons.forEach(h=>rest+=(+h.valor||0)-getPago(h));
+  return`<div class="dt-sec">
+    <div class="dt-sec-h"><h4>Honorários${estimate?' <span style="font-weight:400;color:var(--muted);font-size:11px">· estimativa / negociação</span>':''}</h4><button class="btn btn-ghost btn-sm" onclick="openHonModal('${item.id}')">+ Lançar honorários</button></div>
+    ${hons.length?hons.map(h=>honBlockHtml(item,h)).join('')+`<p style="font-size:11.5px;font-weight:600;margin-top:6px;color:${rest>0?'var(--ora)':'var(--grn)'}">${rest>0?(estimate?'Estimado a receber: ':'A receber: ')+fCur(rest):'✓ Quitado'}</p>`
+      :`<p style="font-size:12px;color:var(--muted)">Nenhum honorário lançado. Clique em "+ Lançar honorários" para incluir pro-labore e êxito, de uma vez.</p>`}
+  </div>${estimate?'':despSection(item)}`;
+}
+
+// ── despesas do cliente ────────────────────────────────
+const ONDE={pj:'escritório (PJ)',pf:'pessoal (PF)'};
+function despStatus(d){
+  if(d.cobrar===false)return{t:'não cobrar',c:'var(--muted)'};
+  if(d.reembolsado)return{t:'reembolsada'+(d.recebidoEm?' na conta '+ONDE[d.recebidoEm]:''),c:'var(--grn)'};
+  return{t:'a cobrar do cliente',c:'var(--ora)'};
+}
+function precisaAjuste(d){return d.reembolsado&&d.recebidoEm&&d.pagoPor&&d.recebidoEm!==d.pagoPor&&!d.ajusteFeito;}
+function despSection(c){
+  const ds=c.despesas||[];const aCobrar=ds.filter(d=>d.cobrar!==false&&!d.reembolsado).reduce((s,d)=>s+(+d.valor||0),0);
+  return`<div class="dt-sec">
+    <div class="dt-sec-h"><h4>Despesas <span class="n">${ds.length}</span></h4>${aCobrar?`<span style="font-size:11.5px;font-weight:700;color:var(--ora)">A cobrar: ${fCur(aCobrar)}</span>`:''}</div>
+    ${ds.map(d=>{const st=despStatus(d);return`<div class="dsp">
+      <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:600">${esc(d.descricao)}</div>
+        <div style="font-size:11px;color:var(--muted)">${d.data?fDate(d.data)+' · ':''}paga pela conta ${ONDE[d.pagoPor]||'?'} · <span style="color:${st.c};font-weight:600">${st.t}</span>${precisaAjuste(d)?' · <span style="color:var(--red);font-weight:600">ajuste PF/PJ pendente</span>':''}</div></div>
+      <b style="font-size:12.5px">${fCur(d.valor)}</b>
+      ${d.cobrar!==false&&!d.reembolsado?`<select onchange="if(this.value)reembolsar('${c.id}','${d.id}',this.value)" style="font-size:11px;padding:4px 6px;border:1px solid var(--line2);border-radius:6px;font-family:inherit"><option value="">Cliente reembolsou em…</option><option value="pj">conta do escritório (PJ)</option><option value="pf">conta pessoal (PF)</option></select>`:''}
+      <button class="task-x" onclick="delDesp('${c.id}','${d.id}')" title="Remover">×</button></div>`;}).join('')}
+    <div class="task-add">
+      <input class="ta-txt" id="ds-txt-${c.id}" placeholder="Nova despesa: custas, cópias, viagem…">
+      <input type="number" id="ds-val-${c.id}" placeholder="Valor R$" style="width:110px">
+      <input type="date" id="ds-data-${c.id}" style="width:128px">
+      <select id="ds-pago-${c.id}"><option value="pj">Paga pelo escritório (PJ)</option><option value="pf">Paga por mim (PF)</option></select>
+      <select id="ds-cob-${c.id}"><option value="1">Cobrar do cliente</option><option value="0">Não cobrar</option></select>
+      <button class="btn btn-pri btn-sm" onclick="addDesp('${c.id}')">Adicionar</button>
+    </div>
+  </div>`;
+}
+function addDesp(cid){
+  const c=findItem(cid);if(!c)return;const t=gv('ds-txt-'+cid).trim(),v=parseFloat(gv('ds-val-'+cid))||0;
+  if(!t||!v){alert('Informe a descrição e o valor da despesa');return;}
+  if(!c.despesas)c.despesas=[];
+  c.despesas.push({id:uid(),descricao:t,valor:v,data:gv('ds-data-'+cid)||hojeISO(),pagoPor:gv('ds-pago-'+cid)||'pj',cobrar:gv('ds-cob-'+cid)!=='0',reembolsado:false,recebidoEm:'',ajusteFeito:false});
+  saveData();render();
+}
+function reembolsar(cid,did,onde){
+  const c=findItem(cid);const d=c&&(c.despesas||[]).find(x=>x.id===did);if(!d)return;
+  d.reembolsado=true;d.recebidoEm=onde;d.dataReembolso=hojeISO();
+  if(!c.historico)c.historico=[];c.historico.unshift({id:uid(),data:hojeISO(),texto:'Despesa reembolsada: '+d.descricao+' ('+fCur(d.valor)+')'});
+  if(precisaAjuste(d))toast('Reembolso caiu em conta diferente da que pagou. Ajuste PF/PJ lembrado no Contábil.');
+  saveData();render();
+}
+function delDesp(cid,did){const c=findItem(cid);if(!c||!confirm('Remover esta despesa?'))return;c.despesas=(c.despesas||[]).filter(x=>x.id!==did);saveData();render();}
+function ajusteFeito(cid,did){const c=findItem(cid);const d=c&&(c.despesas||[]).find(x=>x.id===did);if(!d)return;d.ajusteFeito=true;d.dataAjuste=hojeISO();saveData();render();}
+
+// ── janela de lançamento / edição ──────────────────────
+let _hm=null;
+function novoBloco(tipo){return{id:'',tipo:tipo||'proLabore',descricao:'',calcTipo:'fixo',valor:'',percentualCausa:'',valorCausa:'',parceiros:[],parcelas:[],gatilho:'',followupDate:'',obs:'',_nParc:'',_prim:''};}
+function openHonModal(itemId,honId){
+  const item=itemId?findItem(itemId):null;
+  let blocos;
+  if(item&&honId){const h=(item.honorarios||[]).find(x=>x.id===honId);if(!h)return;
+    blocos=[Object.assign(novoBloco(),JSON.parse(JSON.stringify(h)),{_nParc:'',_prim:''})];
+    blocos[0].calcTipo=h.calcTipo||'fixo';}
+  else blocos=[novoBloco('proLabore')];
+  _hm={itemId:itemId||'',honId:honId||'',blocos};
+  document.getElementById('modal-title').textContent=honId?'Editar honorário':'Lançar honorários';
+  renderHonModal();document.getElementById('modal-main').classList.add('open');
+}
+function hbVal(b){return b.calcTipo==='percentual'?(+b.valorCausa||0)*(+b.percentualCausa||0)/100:(+b.valor||0);}
+function renderHonModal(){
+  const box=document.querySelector('#modal-main .modal-box');if(box)box.style.maxWidth='760px';
+  const inp='padding:7px 9px;border:1px solid var(--line2);border-radius:var(--r);font-family:inherit;font-size:12px;background:#fff';
+  const cli=!_hm.itemId?`<div class="fg" style="margin-bottom:12px"><label>Cliente</label><select id="hm-cli" style="${inp}" onchange="_hm.itemId=this.value">${clientOpts('')}</select></div>`:
+    `<div style="font-size:12.5px;color:var(--muted);margin-bottom:12px">Cliente: <b style="color:var(--ink)">${esc(itemName(findItem(_hm.itemId)))}</b></div>`;
+  const blocos=_hm.blocos.map((b,i)=>{
+    const v=hbVal(b),pp=(b.parceiros||[]).reduce((s,p)=>s+(+p.pct||0),0),soma=(b.parcelas||[]).reduce((s,p)=>s+(+p.valor||0),0);
+    return`<div class="hm-b">
+      <div class="hm-bh"><b>${b.tipo==='proLabore'?'Pro-labore':'Êxito'}</b>
+        <select style="${inp}" onchange="hmSet(${i},'tipo',this.value,true)"><option value="proLabore" ${b.tipo==='proLabore'?'selected':''}>Pro-labore</option><option value="exito" ${b.tipo==='exito'?'selected':''}>Êxito</option></select>
+        <input style="${inp};flex:1" placeholder="Descrição (opcional): 1ª fase, recurso, assessoria mensal…" value="${esc(b.descricao)}" oninput="hmSet(${i},'descricao',this.value)">
+        ${_hm.blocos.length>1?`<button class="task-x" onclick="_hm.blocos.splice(${i},1);renderHonModal()" title="Tirar este bloco">×</button>`:''}
+      </div>
+      <div class="hm-row">
+        <select style="${inp}" onchange="hmSet(${i},'calcTipo',this.value,true)"><option value="fixo" ${b.calcTipo!=='percentual'?'selected':''}>Valor fixo</option><option value="percentual" ${b.calcTipo==='percentual'?'selected':''}>Percentual</option></select>
+        ${b.calcTipo==='percentual'?`<input type="number" style="${inp};width:80px" placeholder="%" value="${b.percentualCausa}" oninput="hmSet(${i},'percentualCausa',this.value)"> <span class="hm-lbl">% sobre</span>
+          <input type="number" style="${inp};width:150px" placeholder="Base R$ (causa, proveito)" value="${b.valorCausa}" oninput="hmSet(${i},'valorCausa',this.value)"> <span class="hm-lbl">= <b id="hm-v-${i}">${fCur(v)}</b></span>`
+        :`<input type="number" style="${inp};width:150px" placeholder="Valor total R$" value="${b.valor}" oninput="hmSet(${i},'valor',this.value)">`}
+      </div>
+      ${b.tipo==='exito'?`<div class="hm-row"><span class="hm-lbl">Gatilho</span><input style="${inp};flex:1" placeholder="Quando fica devido: trânsito em julgado, alvará, recebimento…" value="${esc(b.gatilho)}" oninput="hmSet(${i},'gatilho',this.value)"></div>`:''}
+      <div class="hm-sub"><div class="hm-sub-h"><span>Parceiros</span><button class="alink" onclick="_hm.blocos[${i}].parceiros.push({nome:'',pct:''});renderHonModal()">+ parceiro</button></div>
+        ${(b.parceiros||[]).map((p,j)=>`<div class="hm-row"><input style="${inp};flex:1" placeholder="Nome do parceiro" value="${esc(p.nome)}" oninput="hmPar(${i},${j},'nome',this.value)"><input type="number" style="${inp};width:80px" placeholder="%" value="${p.pct}" oninput="hmPar(${i},${j},'pct',this.value)"><span class="hm-lbl">% =</span><b class="hm-lbl" id="hm-pv-${i}-${j}">${fCur(v*(+p.pct||0)/100)}</b><button class="task-x" onclick="_hm.blocos[${i}].parceiros.splice(${j},1);renderHonModal()">×</button></div>`).join('')}
+        <div class="hm-note" id="hm-mp-${i}" style="color:${pp>100?'var(--red)':'var(--grn)'}">${(b.parceiros||[]).length?`Minha parte: ${Math.round((100-pp)*10)/10}% = ${fCur(v*(100-pp)/100)}${pp>100?' · os parceiros passam de 100%':''}`:'Sem parceiros: 100% seu.'}</div></div>
+      <div class="hm-sub"><div class="hm-sub-h"><span>Parcelas</span><button class="alink" onclick="_hm.blocos[${i}].parcelas.push({id:uid(),descricao:'Parcela '+(_hm.blocos[${i}].parcelas.length+1),valor:'',vencimento:'',pago:false});renderHonModal()">+ parcela</button></div>
+        <div class="hm-row"><span class="hm-lbl">Dividir em</span><input type="number" min="1" style="${inp};width:64px" value="${b._nParc}" oninput="hmSet(${i},'_nParc',this.value)"><span class="hm-lbl">vezes, 1º vencimento</span><input type="date" style="${inp}" value="${b._prim}" oninput="hmSet(${i},'_prim',this.value)"><span class="hm-lbl">mensal</span><button class="btn btn-ghost btn-sm" onclick="hmGerar(${i})">Gerar parcelas</button></div>
+        ${(b.parcelas||[]).map((p,j)=>`<div class="hm-row"><input style="${inp};flex:1" value="${esc(p.descricao)}" oninput="hmParc(${i},${j},'descricao',this.value)"><input type="number" style="${inp};width:120px" placeholder="Valor" value="${p.valor}" oninput="hmParc(${i},${j},'valor',this.value)"><input type="date" style="${inp}" value="${p.vencimento||''}" oninput="hmParc(${i},${j},'vencimento',this.value)"><label class="hm-lbl"><input type="checkbox" ${p.pago?'checked':''} onchange="hmParc(${i},${j},'pago',this.checked)"> pago</label><button class="task-x" onclick="_hm.blocos[${i}].parcelas.splice(${j},1);renderHonModal()">×</button></div>`).join('')}
+        <div class="hm-note" id="hm-ps-${i}" style="color:${(b.parcelas||[]).length&&Math.abs(soma-v)>0.5?'var(--ora)':'var(--muted)'}">${(b.parcelas||[]).length?`Soma das parcelas: ${fCur(soma)}${Math.abs(soma-v)>0.5?' · contratado '+fCur(v):' ✓'}`:'Sem parcelas: o valor fica como um único recebimento.'}</div></div>
+      <div class="hm-row"><span class="hm-lbl">Cobrar em</span><input type="date" style="${inp}" value="${b.followupDate||''}" oninput="hmSet(${i},'followupDate',this.value)"><input style="${inp};flex:1" placeholder="Observações" value="${esc(b.obs)}" oninput="hmSet(${i},'obs',this.value)"></div>
+    </div>`;}).join('');
+  document.getElementById('modal-body').innerHTML=cli+blocos+`<div class="factions" style="justify-content:space-between">
+    <div>${_hm.honId?'':`<button class="btn btn-ghost btn-sm" onclick="_hm.blocos.push(novoBloco('proLabore'));renderHonModal()">+ Pro-labore</button> <button class="btn btn-ghost btn-sm" onclick="_hm.blocos.push(novoBloco('exito'));renderHonModal()">+ Êxito</button>`}</div>
+    <div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-pri" onclick="saveHonModal()">Salvar</button></div></div>`;
+}
+function hmSet(i,k,v,rerender){_hm.blocos[i][k]=v;if(rerender)renderHonModal();else hmRefresh(i);}
+function hmPar(i,j,k,v){_hm.blocos[i].parceiros[j][k]=v;hmRefresh(i);}
+function hmParc(i,j,k,v){_hm.blocos[i].parcelas[j][k]=v;hmRefresh(i);}
+function hmRefresh(i){
+  const b=_hm.blocos[i];const v=hbVal(b);
+  const ev=document.getElementById('hm-v-'+i);if(ev)ev.textContent=fCur(v);
+  const pp=(b.parceiros||[]).reduce((s,p)=>s+(+p.pct||0),0);
+  (b.parceiros||[]).forEach((p,j)=>{const e=document.getElementById('hm-pv-'+i+'-'+j);if(e)e.textContent=fCur(v*(+p.pct||0)/100);});
+  const mp=document.getElementById('hm-mp-'+i);if(mp&&(b.parceiros||[]).length){mp.textContent=`Minha parte: ${Math.round((100-pp)*10)/10}% = ${fCur(v*(100-pp)/100)}${pp>100?' · os parceiros passam de 100%':''}`;mp.style.color=pp>100?'var(--red)':'var(--grn)';}
+  const ps=document.getElementById('hm-ps-'+i);const soma=(b.parcelas||[]).reduce((s,p)=>s+(+p.valor||0),0);
+  if(ps&&(b.parcelas||[]).length){ps.textContent=`Soma das parcelas: ${fCur(soma)}${Math.abs(soma-v)>0.5?' · contratado '+fCur(v):' ✓'}`;ps.style.color=Math.abs(soma-v)>0.5?'var(--ora)':'var(--muted)';}
+}
+function hmGerar(i){
+  const b=_hm.blocos[i];const n=parseInt(b._nParc)||0;const v=hbVal(b);
+  if(n<1){alert('Informe em quantas vezes dividir');return;}if(!v){alert('Informe primeiro o valor');return;}
+  const base=Math.floor(v/n*100)/100;const ult=Math.round((v-base*(n-1))*100)/100;
+  b.parcelas=[];for(let k=0;k<n;k++){let venc='';if(b._prim){const d=new Date(b._prim+'T12:00:00');d.setMonth(d.getMonth()+k);venc=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+    b.parcelas.push({id:uid(),descricao:'Parcela '+(k+1)+'/'+n,valor:k===n-1?ult:base,vencimento:venc,pago:false});}
+  renderHonModal();
+}
+function saveHonModal(){
+  const item=findItem(_hm.itemId||gv('hm-cli'));if(!item){alert('Escolha o cliente');return;}
+  for(const b of _hm.blocos){
+    if(!hbVal(b)&&!(b.tipo==='exito'&&b.calcTipo==='percentual'&&+b.percentualCausa)){alert('Informe o valor de cada honorário (ou o percentual, no êxito).');return;}
+    if((b.parceiros||[]).reduce((s,p)=>s+(+p.pct||0),0)>100){alert('Os percentuais dos parceiros passam de 100%.');return;}
+  }
+  if(!item.honorarios)item.honorarios=[];
+  _hm.blocos.forEach(b=>{
+    const isPct=b.calcTipo==='percentual';
+    const dados={tipo:b.tipo,descricao:(b.descricao||'').trim(),calcTipo:isPct?'percentual':'fixo',valor:hbVal(b),percentualCausa:isPct?+b.percentualCausa||0:0,valorCausa:isPct?+b.valorCausa||0:0,
+      parceiros:(b.parceiros||[]).filter(p=>(p.nome||'').trim()||+p.pct).map(p=>({nome:(p.nome||'').trim(),pct:+p.pct||0})),
+      gatilho:b.tipo==='exito'?(b.gatilho||'').trim():'',followupDate:b.followupDate||'',obs:(b.obs||'').trim(),
+      parcelas:(b.parcelas||[]).map(p=>({id:p.id||uid(),descricao:p.descricao||'',valor:+p.valor||0,vencimento:p.vencimento||'',pago:!!p.pago,dataPagamento:p.pago?(p.dataPagamento||hojeISO()):''}))};
+    dados.pago=dados.parcelas.length?dados.parcelas.filter(p=>p.pago).reduce((s,p)=>s+p.valor,0):(+b.pago||0);
+    let h=_hm.honId?item.honorarios.find(x=>x.id===_hm.honId):null;
+    const antes=h?new Set((h.parcelas||[]).filter(p=>p.pago).map(p=>p.id)):new Set();
+    if(h)Object.assign(h,dados);else{h=Object.assign({id:uid(),gatilhoAtivado:false,gatilhoData:''},dados);item.honorarios.push(h);}
+    if(!isProsp(item))h.parcelas.forEach(p=>{if(p.pago&&!antes.has(p.id))addNfPendente(item,h,p);});
+    (h.parcelas||[]).forEach(p=>{if(!p.pago)rmNfPendente(p.id);});
+  });
+  _hm=null;saveData();closeModal();render();toast('Honorários salvos.');
+}
+
+// ── aba Honorários ─────────────────────────────────────
+function bHon(){
+  let tPL=0,pPL=0,tEx=0,pEx=0,liq=0,liqRec=0;
+  S.casos.forEach(c=>(c.honorarios||[]).forEach(h=>{const pg=getPago(h),v=+h.valor||0;if(h.tipo==='proLabore'){tPL+=v;pPL+=pg;}else{tEx+=v;pEx+=pg;}liq+=(v-pg)*minhaFr(h);liqRec+=pg*minhaFr(h);}));
+  const hf=S.honFilter||'pendentes';
+  const tem=c=>(c.honorarios||[]).length||(c.despesas||[]).length;
+  let lista=filterByTag(S.casos).filter(c=>{
+    const hs=c.honorarios||[];const despAb=(c.despesas||[]).some(d=>d.cobrar!==false&&!d.reembolsado);
+    if(hf==='todos')return tem(c);
+    if(hf==='pendentes')return hs.some(h=>getPago(h)<(+h.valor||0))||despAb;
+    if(hf==='prolabore')return hs.some(h=>h.tipo==='proLabore'&&getPago(h)<(+h.valor||0));
+    if(hf==='exito')return hs.some(h=>h.tipo==='exito'&&getPago(h)<(+h.valor||0));
+    if(hf==='despesas')return despAb;
+    if(hf==='quitados')return hs.length&&hs.every(h=>getPago(h)>=(+h.valor||0));
+    return tem(c);
+  }).sort((a,b)=>a.client.localeCompare(b.client,'pt-BR'));
+  const prox=getAllProximasParcelas(60);
+  const HF=[['pendentes','Pendentes'],['prolabore','Pro-labore'],['exito','Êxito'],['despesas','Despesas a cobrar'],['quitados','Quitados'],['todos','Todos']];
+  const semHon=ativosC().filter(c=>!(c.honorarios||[]).length).length;
+  return`${tagFilterBanner()}<div class="dash"><div>
+  <div class="top-bar"><div class="filters">${HF.map(([id,l])=>`<button class="fbtn${hf===id?' on':''}" onclick="S.honFilter='${id}';render()">${l}</button>`).join('')}</div>
+    <button class="btn-new" onclick="openHonModal('')">+ Lançar honorários</button></div>
+  ${semHon?`<p style="font-size:11.5px;color:var(--muted);margin:-6px 0 12px">${semHon} caso${semHon>1?'s':''} ativo${semHon>1?'s':''} sem honorário lançado. Use "+ Lançar honorários" e escolha o cliente.</p>`:''}
+  ${lista.length?lista.map(c=>{
+    const hs=c.honorarios||[];let rest=0;hs.forEach(h=>rest+=(+h.valor||0)-getPago(h));
+    const despAb=(c.despesas||[]).filter(d=>d.cobrar!==false&&!d.reembolsado).reduce((s,d)=>s+(+d.valor||0),0);
+    const px=prox.find(x=>x.casoId===c.id);
+    return`<div class="hcard">
+      <div class="hc-head" onclick="goCaso('${c.id}')" title="Abrir a ficha do caso">
+        <div><div class="hcard-name">${esc(c.client)} <span style="font-size:11px;color:var(--blu);font-weight:600">abrir ›</span></div>
+          <div style="font-size:11.5px;font-weight:600;margin-top:2px;color:${rest>0?'var(--ora)':'var(--grn)'}">${rest>0?'A receber: '+fCur(rest):'✓ Honorários quitados'}${despAb?` · <span style="color:var(--ora)">despesas a cobrar: ${fCur(despAb)}</span>`:''}</div></div>
+        <div style="display:flex;gap:6px;align-items:center" onclick="event.stopPropagation()">${(c.tagIds||[]).map(id=>tagPill(id)).join('')}<button class="btn btn-pri btn-sm" onclick="openHonModal('${c.id}')">+ Lançar</button></div>
+      </div>
+      ${px&&px.parcela.vencimento?`<div class="hc-next">Próxima parcela: ${esc(px.parcela.descricao||'')} · ${fDate(px.parcela.vencimento)} · <b>${fCur(px.parcela.valor)}</b></div>`:''}
+      ${hs.map(h=>honBlockHtml(c,h)).join('')}
+    </div>`;}).join(''):`<div class="empty">Nenhum caso neste filtro.</div>`}
+  </div>
+  <div><div style="position:sticky;top:70px">
+    <div style="background:var(--ink);border-radius:var(--rl);padding:18px 20px;color:#fff;box-shadow:var(--sh2)">
+      <div style="font-size:9px;font-weight:600;letter-spacing:.6px;opacity:.55;margin-bottom:12px;text-transform:uppercase">Resumo financeiro</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;opacity:.7">Pro-labore a receber</span><b style="color:#f5d38a">${fCur(tPL-pPL)}</b></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;opacity:.7">Êxito a receber</span><b style="color:#93c5fd">${fCur(tEx-pEx)}</b></div>
+      <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(255,255,255,.12)"><span style="font-size:11px;opacity:.7">Minha parte a receber</span><b style="color:#8fe3a8">${fCur(liq)}</b></div>
+      <div style="font-size:10px;opacity:.5;margin-top:3px">já descontada a parte dos parceiros</div>
+      <div style="display:flex;justify-content:space-between;margin-top:10px"><span style="font-size:11px;opacity:.7">Já recebido (minha parte)</span><b>${fCur(liqRec)}</b></div>
+      ${prox.length?`<div style="border-top:1px solid rgba(255,255,255,.12);padding-top:12px;margin-top:12px"><div style="font-size:9px;opacity:.55;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Próximas cobranças</div>${prox.slice(0,5).map(it=>`<div onclick="goCaso('${it.casoId}')" style="display:flex;justify-content:space-between;padding:5px 0;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06)"><div><div style="font-size:11px">${esc(it.client)}</div><div style="font-size:9.5px;opacity:.55">${it.parcela.vencimento?fDate(it.parcela.vencimento):'sem data'}</div></div><b style="font-size:12px;color:${it.dl!==null&&it.dl<0?'#fca5a5':'#f5d38a'}">${fCur(it.parcela.valor)}</b></div>`).join('')}</div>`:''}
+    </div></div></div></div>`;
+}
+
+// ── aba Contábil ───────────────────────────────────────
+function ajustesPend(){const out=[];S.casos.forEach(c=>(c.despesas||[]).forEach(d=>{if(precisaAjuste(d))out.push({c,d});}));return out;}
+function nfEmitida(id){
+  const st=nfStore();const n=st.find(x=>x.id===id);if(!n)return;
+  const num=(gv('nfn-'+id)||'').trim();
+  const now=new Date();const mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  if(!S.contabil[mk])S.contabil[mk]={};if(!S.contabil[mk].nfs)S.contabil[mk].nfs=[];
+  S.contabil[mk].nfs.push({id:uid(),client:n.client,number:num,valor:n.valor});
+  S.contabil.nfPendentes=st.filter(x=>x.id!==id);saveData();render();
+}
+function nfIgnorar(id){if(!confirm('Tirar este lembrete sem registrar NF?'))return;S.contabil.nfPendentes=nfStore().filter(x=>x.id!==id);saveData();render();}
+function pendContabeis(){return nfStore().length+ajustesPend().length;}
+function bCont(){
+  const now=new Date();const mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const cd=S.contabil[mk]||{};const dl=daysTo(mk+'-20');const du=!cd.dasPago&&dl!==null&&dl<=7;
+  const chk=(lbl,f,v)=>`<div class="check-item${v?' done':''}"><input type="checkbox" id="ck-${f}" ${v?'checked':''} onchange="ckCo('${mk}','${f}',this.checked)"><label for="ck-${f}">${lbl}</label></div>`;
+  const nfs=cd.nfs||[];const pend=nfStore();const aj=ajustesPend();
+  return`<h2 style="font-size:16px;font-weight:600;margin-bottom:16px;text-transform:capitalize">${now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</h2>
+  <div class="card" style="${pend.length?'border-left:3px solid var(--ora)':''}"><h3 style="font-size:13px;font-weight:600;margin-bottom:10px">Notas fiscais a emitir <span class="pv-cnt">${pend.length}</span></h3>
+    ${pend.length?pend.map(n=>`<div class="nf-row" style="align-items:center;gap:8px"><div style="flex:1"><b>${esc(n.client)}</b> <span style="color:var(--muted)">· ${esc(n.descricao)} · recebido em ${fDate(n.data)}</span></div><b>${fCur(n.valor)}</b>
+      <input id="nfn-${n.id}" placeholder="Nº da NF" style="width:90px;padding:5px 8px;border:1px solid var(--line2);border-radius:6px;font-family:inherit;font-size:11.5px">
+      <button class="btn btn-pri btn-sm" onclick="nfEmitida('${n.id}')">Emitida</button><button class="task-x" onclick="nfIgnorar('${n.id}')" title="Tirar lembrete">×</button></div>`).join('')
+      :`<p style="font-size:12px;color:var(--muted)">Nada pendente. Quando você marcar uma parcela de honorários como paga, o lembrete aparece aqui e no Painel.</p>`}
+  </div>
+  ${aj.length?`<div class="card" style="border-left:3px solid var(--red)"><h3 style="font-size:13px;font-weight:600;margin-bottom:10px">Ajustes entre conta pessoal (PF) e do escritório (PJ) <span class="pv-cnt">${aj.length}</span></h3>
+    ${aj.map(({c,d})=>`<div class="nf-row" style="align-items:center;gap:8px"><div style="flex:1"><b>${esc(c.client)}</b> <span style="color:var(--muted)">· ${esc(d.descricao)} · paga pela conta ${ONDE[d.pagoPor]}, reembolsada na conta ${ONDE[d.recebidoEm]}</span></div><b>${fCur(d.valor)}</b><button class="btn btn-pri btn-sm" onclick="ajusteFeito('${c.id}','${d.id}')">Ajuste feito</button></div>`).join('')}
+  </div>`:''}
+  <div class="card"><h3 style="font-size:13px;font-weight:600;margin-bottom:12px">Checklist mensal</h3>
+    ${chk('NFs emitidas após recebimento','nfsEmitidas',cd.nfsEmitidas)}
+    ${chk('Categorização Conube ao longo do mês','conubeFeito',cd.conubeFeito)}
+    ${chk('Fechamento Conube (1º do próximo mês)','fechConube',cd.fechConube)}
+    <div class="das-row"><div class="check-item${cd.dasPago?' done':''}" style="border:none;padding:0"><input type="checkbox" id="ck-das" ${cd.dasPago?'checked':''} onchange="ckCo('${mk}','dasPago',this.checked)"><label for="ck-das">DAS pago (vencimento dia 20)</label></div><span style="font-size:11.5px;font-weight:700;color:${du?'var(--red)':cd.dasPago?'var(--grn)':'var(--muted)'}">${cd.dasPago?'✓ Pago':dl<0?'Venceu':du?'Urgente: '+relDias(dl):relDias(dl)}</span></div>
+  </div>
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="font-size:13px;font-weight:600">NFs emitidas este mês</h3><button class="btn btn-pri btn-sm" onclick="openModal('nf')">+ Registrar NF</button></div>
+    ${!nfs.length?`<p style="font-size:12px;color:var(--muted)">Nenhuma NF registrada.</p>`:nfs.map((nf,i)=>`<div class="nf-row"><span>${esc(nf.client)}${nf.number?' · NF '+esc(nf.number):''}</span><div style="display:flex;gap:8px;align-items:center"><span style="color:var(--muted)">${fCur(nf.valor)}</span><button class="alink del" onclick="delNF('${mk}',${i})">×</button></div></div>`).join('')}
+    ${nfs.length?`<div style="font-size:12.5px;font-weight:700;margin-top:10px">Total: ${fCur(nfs.reduce((s,n)=>s+(n.valor||0),0))}</div>`:''}
+  </div>`;
 }
 
 window.addEventListener('resize',setTop);

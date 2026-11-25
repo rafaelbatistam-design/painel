@@ -413,6 +413,24 @@ details.next7[open]>summary{border-bottom:1px solid var(--line);}
 .task-time{font-weight:700;color:var(--ink);}
 
 .kb-col{width:236px;}
+
+/* lista em tela cheia + ficha em painel lateral */
+.md{grid-template-columns:1fr !important;}
+.md-list{position:static !important;max-height:none !important;}
+.md-detail{display:none;}
+.md-detail.open{display:block;position:fixed;top:var(--topH,34px);right:0;bottom:0;width:min(840px,66vw);z-index:120;overflow-y:auto;border-radius:0;border:none;box-shadow:-12px 0 44px rgba(27,42,74,.2);}
+.drawer-bg{position:fixed;inset:0;background:rgba(20,28,48,.26);z-index:110;}
+.drawer-x{position:sticky;top:10px;float:right;margin:10px 14px 0 0;z-index:2;background:#fff;border:1px solid var(--line2);border-radius:var(--r);padding:6px 11px;font-family:inherit;font-size:12px;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+.drawer-x:hover{background:var(--paper2);}
+.back-mobile{display:none !important;}
+@media(max-width:900px){.md-detail.open{width:100vw;}}
+.md-row{padding:12px 18px;}
+.md-row-name{font-size:14px;}
+.md-row-meta{font-size:11.5px;}
+.md-row-date{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;}
+.md-row-next{font-size:11.5px;color:var(--ink-soft);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.conv-btn{font-size:11px;padding:4px 10px;}
+.md-detail.open .dt-head{padding-right:118px;}
 </style>
 </head>
 <body>
@@ -872,7 +890,7 @@ function casoFilterList(){
 function bCasos(){
   const list=sortC(casoFilterList());
   // seleção default = primeiro da lista
-  if(!S.selCaso||!list.find(c=>c.id===S.selCaso)){S.selCaso=list.length?list[0].id:null;}
+  if(S.selCaso&&!S.casos.find(c=>c.id===S.selCaso))S.selCaso=null;
   const view=S.casosView||'lista';
 
   const FILTERS=[{id:'ativos',label:'Ativos'},{id:'todos',label:'Todos'},{id:'prazos',label:'⚖ Com prazo'},{id:'judicial',label:'Judiciais'},{id:'consultivo',label:'Consultivos'}];
@@ -902,8 +920,8 @@ function bCasos(){
       <div class="md-search"><input placeholder="Buscar caso, cliente, processo…" value="${esc(S.search)}" oninput="S.search=this.value;rerenderCasos()"></div>
       <div class="md-rows">${list.length?list.map(c=>caseRow(c)).join(''):`<div class="empty" style="padding:26px">Nenhum caso neste filtro.</div>`}</div>
     </div>
-    <div class="md-detail ${hideDetail}">
-      <button class="back-mobile" onclick="S.mobileDetail=false;render()">‹ Voltar à lista</button>
+    ${sel?`<div class="drawer-bg" onclick="fecharFicha()"></div>`:''}<div class="md-detail ${hideDetail} ${sel?'open':''}">
+      <button class="drawer-x" onclick="fecharFicha()" title="Fechar (Esc)">× Fechar</button>
       ${sel?caseDetail(sel):`<div class="empty" style="padding:60px"><div class="big">Selecione um caso</div>Escolha um caso na lista para ver os detalhes.</div>`}
     </div>
   </div>`;
@@ -1267,7 +1285,7 @@ function sortP(arr){const now=today0();return[...arr].sort((a,b)=>{
 });}
 function bProsp(){
   const list=sortP(prospList());
-  if(!S.selProsp||!list.find(p=>p.id===S.selProsp)){S.selProsp=list.length?list[0].id:null;}
+  if(S.selProsp&&!S.prospeccao.find(p=>p.id===S.selProsp))S.selProsp=null;
   const view=S.prospView||'lista';const allP=filterByTag(S.prospeccao);
   const FILTERS=[{id:'ativos',label:'Ativos'},{id:'proposta',label:'Propostas'},{id:'contratou',label:'Contrataram'},{id:'nao_contratou',label:'Não contrataram'},{id:'todos',label:'Todos'}];
   const bar=`${tagFilterBanner()}<div class="top-bar">
@@ -1294,8 +1312,8 @@ function bProsp(){
       <div class="md-search"><input placeholder="Buscar prospecção…" value="${esc(S.search)}" oninput="S.search=this.value;render()"></div>
       <div class="md-rows">${list.length?list.map(p=>prospRow(p)).join(''):`<div class="empty" style="padding:26px">Nenhuma prospecção neste filtro.</div>`}</div>
     </div>
-    <div class="md-detail ${hideDetail}">
-      <button class="back-mobile" onclick="S.mobileDetail=false;render()">‹ Voltar à lista</button>
+    ${sel?`<div class="drawer-bg" onclick="fecharFicha()"></div>`:''}<div class="md-detail ${hideDetail} ${sel?'open':''}">
+      <button class="drawer-x" onclick="fecharFicha()" title="Fechar (Esc)">× Fechar</button>
       ${sel?prospDetail(sel):`<div class="empty" style="padding:60px"><div class="big">Selecione uma prospecção</div></div>`}
     </div>
   </div>`;
@@ -1859,7 +1877,7 @@ function judBlock(){
       </div>
       <div class="tl-r">
         <div class="tl-days" style="color:${over?'var(--red)':meta.color}">${dTxt}</div>
-        ${tk.hora?`<div style="font-size:12px;font-weight:700;color:var(--ink)">${tk.hora}</div>`:''}
+        <div style="font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap">${fDiaSem(tk.data)}${tk.hora?' · '+tk.hora:''}</div>
         <a href="${gcalTask(c,tk)}" target="_blank" onclick="event.stopPropagation()" class="mini-cal">Agenda</a>
       </div>
     </div>`;
@@ -1872,6 +1890,13 @@ function dashRow(o){
       <div class="dr-c"><div class="dr-txt">Receber ${esc(o.it.parcela.descricao||'parcela')}: ${fCur(o.it.parcela.valor)}</div>
       <div class="dr-meta"><span class="chip" style="color:var(--grn);background:var(--grn-bg);border-color:var(--grn-b)">Honorário ${o.it.tipo==='proLabore'?'pro-labore':'êxito'}</span><span class="dr-cli" onclick="goCaso('${o.it.casoId}')">${esc(o.it.client)}</span></div></div>
       <div class="dr-when" style="color:${w.col}">${w.txt}</div></div>`;
+  }
+  if(o.kind==='conv'){
+    const p=o.p;
+    return`<div class="dr"><span style="width:18px;text-align:center;color:var(--grn);font-weight:700">✓</span>
+      <div class="dr-c"><div class="dr-txt">Contratou: abrir o caso</div><div class="dr-meta"><span class="dr-cli" onclick="goProsp('${p.id}')">${esc(p.name)}</span>${p.subject?' · '+esc(p.subject):''}</div></div>
+      <button class="btn btn-pri btn-sm conv-btn" onclick="openConvert('${p.id}')">Abrir caso</button>
+      <button class="btn btn-ghost btn-sm conv-btn" onclick="jaTemCaso('${p.id}')" title="O caso já existe no painel">Já tem caso</button></div>`;
   }
   if(o.kind==='fu'){
     const p=o.p;const w=o.d<0?{txt:Math.abs(o.d)+'d de atraso',col:'var(--red)'}:o.d===0?{txt:'hoje',col:'var(--ora)'}:{txt:fDateShort(p.followupDate),col:'var(--blu)'};
@@ -1897,6 +1922,7 @@ function bDash(){
     if(pendTasks(p).some(t=>t.tipo==='followup'&&t.data))return;
     const d=daysTo(p.followupDate);if(d<=0)hoje.push({kind:'fu',p,d});else if(d<=7)prox.push({kind:'fu',p,d});
   });
+  S.prospeccao.filter(precisaCaso).forEach(p=>hoje.push({kind:'conv',p,d:0}));
   const key=o=>o.kind==='task'?(o.d!==null&&o.d<=0?o.d:0.5):o.d;
   hoje.sort((a,b)=>key(a)-key(b)||((a.t&&a.t.hora)||'99').localeCompare((b.t&&b.t.hora)||'99'));
   prox.sort((a,b)=>a.d-b.d||((a.t&&a.t.hora)||'99').localeCompare((b.t&&b.t.hora)||'99'));
@@ -2320,6 +2346,68 @@ prospecção: [nome] → followup: 20/06/2026</pre>
 <p style="font-size:11px;color:var(--muted);margin-top:4px"><b>tipos judiciais:</b> prazo · julgamento presencial · julgamento virtual · audiência · despacho.</p>
 <p style="font-size:11px;color:var(--muted);margin-top:4px"><b>hoje:</b> marca a providência com ★ para aparecer no Painel de hoje.</p>
 <p style="font-size:11px;color:var(--muted);margin-top:4px"><b>etapas da prospecção:</b> fazer contato · aguardando documentos · examinar documentos · elaborar proposta · aguardando retorno · contratou · não contratou. Cada mudança de etapa cria a providência correspondente.</p>`;
+}
+
+// ── ajustes da rodada 2 ────────────────────────────────
+const DSEM=['dom','seg','ter','qua','qui','sex','sáb'];
+function fDiaSem(d){if(!d)return'';const x=new Date(d+'T12:00:00');return String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0')+', '+DSEM[x.getDay()];}
+function relDias(d){return d<0?Math.abs(d)+'d atr.':d===0?'hoje':d===1?'amanhã':d+'d';}
+function fecharFicha(){S.selCaso=null;S.selProsp=null;S.mobileDetail=false;render();}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&(S.selCaso||S.selProsp)&&!document.getElementById('modal-main').classList.contains('open')&&(S.tab==='casos'||S.tab==='prospeccao'))fecharFicha();});
+const _setTopV2=setTop;
+setTop=function(){_setTopV2();document.documentElement.style.setProperty('--topH',document.getElementById('ubar').offsetHeight+'px');};
+function setTab(t){S.tab=t;S.editId=null;S.editHonId=null;S.editHonHid=null;_editTaskId=null;S.mobileDetail=false;S.search='';render();window.scrollTo(0,0);}
+// prospecção que contratou mas ainda não virou caso continua ativa
+function precisaCaso(p){return p.stage==='contratou'&&!p.casoId;}
+function ativosP(){return S.prospeccao.filter(p=>!['contratou','nao_contratou'].includes(p.stage)||precisaCaso(p));}
+function jaTemCaso(pid){const p=S.prospeccao.find(x=>x.id===pid);if(!p)return;p.casoId='existente';if(!p.historico)p.historico=[];p.historico.unshift({id:uid(),data:hojeISO(),texto:'Marcada como já tendo caso aberto'});saveData();render();}
+function prospList(){
+  let base=filterByTag(S.prospeccao).filter(prospMatch);
+  if(S.search)return base;
+  const f=S.prospFilter||'ativos';
+  if(f==='ativos')base=base.filter(p=>p.stage!=='nao_contratou'&&!(p.stage==='contratou'&&p.casoId));
+  else if(f==='proposta')base=base.filter(p=>['examinar_docs','elaborar_proposta','aguardando_retorno'].includes(p.stage));
+  else if(f==='contratou')base=base.filter(p=>p.stage==='contratou');
+  else if(f==='nao_contratou')base=base.filter(p=>p.stage==='nao_contratou');
+  return base;
+}
+function casoFilterList(){
+  let base=filterByTag(S.casos).filter(casoMatchesSearch);
+  if(S.search)return base;
+  if(S.filter==='ativos')base=base.filter(c=>c.status!=='encerrado');
+  else if(S.filter==='judicial')base=base.filter(c=>c.type==='judicial');
+  else if(S.filter==='consultivo')base=base.filter(c=>c.type==='consultivo');
+  else if(S.filter==='prazos')base=base.filter(c=>judTasks(c).length>0);
+  return base;
+}
+function caseRow(c){
+  const sel=S.selCaso===c.id;const hasJud=judTasks(c).length>0;
+  const pend=pendTasks(c).filter(t=>t.data).sort((a,b)=>a.data.localeCompare(b.data));
+  const jt=judTasks(c).sort((a,b)=>a.data.localeCompare(b.data))[0];
+  const nt=jt||pend[0]||null;const d=nt?daysTo(nt.data):null;
+  let cls='dd-ok';if(d!==null){if(d<0)cls='dd-over';else if(jt&&d<=7)cls='dd-jud';else if(d<=7)cls='dd-urg';}
+  const nPend=pendTasks(c).length;
+  const meta=[c.type==='consultivo'?'Consultivo':(c.tribunal||'Judicial'),c.processNumber||'',c.status!=='em_andamento'?sLabel(c.status):'',nPend?nPend+' pendente'+(nPend>1?'s':''):''].filter(Boolean).join(' · ');
+  return`<div class="md-row ${sel?'sel':''} ${hasJud?'has-jud':''}" onclick="selectCaso('${c.id}')">
+    <div class="md-row-bar"></div>
+    <div class="md-row-c"><div class="md-row-name">${esc(c.client)}</div><div class="md-row-meta">${esc(meta)}</div>
+      ${nt?`<div class="md-row-next">${jt?'⚖ ':''}${esc(nt.texto)}</div>`:''}</div>
+    ${nt?`<div class="md-row-r"><span class="md-row-days ${cls}">${jt&&d<=7?'⚖ ':''}${relDias(d)}</span><span class="md-row-date">${fDiaSem(nt.data)}${nt.hora?' · '+nt.hora:''}</span></div>`:''}
+  </div>`;
+}
+function prospRow(p){
+  const sel=S.selProsp===p.id;const sc=STAGE_COLOR[p.stage]||STAGE_COLOR.fazer_contato;
+  const stLabel=(STAGES.find(s=>s.id===p.stage)||{}).label||p.stage;
+  const nt=pendTasks(p).filter(t=>t.data).sort((a,b)=>a.data.localeCompare(b.data))[0];const d=nt?daysTo(nt.data):null;
+  const fu=!nt&&p.followupDate?daysTo(p.followupDate):null;
+  return`<div class="md-row ${sel?'sel':''}" onclick="selectProsp('${p.id}')">
+    <div class="md-row-bar" style="background:${sc.fg};opacity:.55"></div>
+    <div class="md-row-c"><div class="md-row-name">${esc(p.name)}</div>
+      <div class="md-row-meta"><span style="color:${sc.fg};font-weight:600">${stLabel}</span>${p.subject?' · '+esc(p.subject):''}</div>
+      ${precisaCaso(p)?`<div class="md-row-next" style="color:var(--red);font-weight:600">Contratou: falta abrir o caso</div>`:nt?`<div class="md-row-next">${esc(nt.texto)}</div>`:''}</div>
+    ${nt?`<div class="md-row-r"><span class="md-row-days ${d<0?'dd-over':d<=7?'dd-urg':'dd-ok'}">${relDias(d)}</span><span class="md-row-date">${fDiaSem(nt.data)}</span></div>`
+      :fu!==null?`<div class="md-row-r"><span class="md-row-days ${fu<=0?'dd-over':'dd-ok'}">follow-up</span><span class="md-row-date">${fDiaSem(p.followupDate)}</span></div>`:''}
+  </div>`;
 }
 
 window.addEventListener('resize',setTop);

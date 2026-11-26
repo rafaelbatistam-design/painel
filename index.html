@@ -492,6 +492,8 @@ details.next7[open]>summary{border-bottom:1px solid var(--line);}
 .task-click{cursor:pointer;}
 .task-click:hover{color:var(--blu);}
 .dica{font-size:11.5px;color:var(--muted);background:#fff;border:1px dashed var(--line2);border-radius:8px;padding:7px 12px;margin-bottom:12px;}
+.pv-gadd-btn{display:block;width:100%;text-align:left;margin-top:8px;padding:8px 11px;border:1px dashed var(--line2);border-radius:var(--r);background:var(--paper);font-family:inherit;font-size:12px;color:var(--muted);cursor:pointer;}
+.pv-gadd-btn:hover{border-style:solid;border-color:var(--ink);color:var(--ink);background:#fff;}
 </style>
 </head>
 <body>
@@ -2077,7 +2079,7 @@ function bProv(){
         <button class="alink" onclick="event.stopPropagation();openFicha('${g.c.id}')">abrir ›</button>
       </div>
       ${closed?'':`<div class="pv-body">${g.list.map(o=>taskRow(o.c,o.t)).join('')}
-        <div class="pv-gadd"><input placeholder="+ providência para ${esc(itemName(g.c))} (Enter)" onkeydown="if(event.key==='Enter'&&this.value.trim()){quickAdd('${g.c.id}',this.value)}"></div></div>`}
+        <button class="pv-gadd-btn" onclick="openFichaNova('${g.c.id}')">+ providência para ${esc(itemName(g.c))}</button></div>`}
     </div>`;}).join(''):`<div class="empty"><div class="big">Nenhuma providência neste filtro</div>Use o campo acima para criar uma.</div>`);
 }
 function provSortKey(o){return o.d!==null&&o.d<=0?o.d:(o.t.foco?0.5:(o.d===null?999:o.d));}
@@ -2932,6 +2934,12 @@ render=function(){
 const _setTabV2=setTab;
 setTab=function(t){S.ficha=null;_setTabV2(t);};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.ficha&&!document.getElementById('modal-main').classList.contains('open'))fecharFichaAba();});
+
+// abre a ficha já no campo de nova providência (com tipo, data, hora)
+function openFichaNova(id){
+  openFicha(id);
+  setTimeout(()=>{const el=document.getElementById('nt-txt-'+id);if(el){el.scrollIntoView({block:'center'});el.focus();}},60);
+}
 
 window.addEventListener('resize',setTop);
 init();

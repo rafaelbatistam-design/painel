@@ -2210,6 +2210,7 @@ function saveTaskEdit(cid,tid){
   t.tipoLivre=tipo==='outro'?gv('et-livre-'+tid).trim():'';
   const et=gv('et-etapa-'+tid);if(et)t.etapa=et;
   t.dataInicio=tipo==='prazo'?x:'';t.dataFim=tipo==='julg_virt'?x:'';
+  if(isProsp(c)&&tipo==='followup'&&(t.auto==='retorno'||t.auto==='docs'))c.followupDate=t.data||'';
   _editTaskId=null;saveData();render();
 }
 function tasksSection(item){
@@ -2852,6 +2853,14 @@ function setProspCampo(id,campo,v){
   }
   saveData();render();
 }
+
+// a cobrança automática concluída encerra o follow-up da prospecção
+const _toggleTaskV1=toggleTask;
+toggleTask=function(cid,tid,checked){
+  const c=findItem(cid);const t=c&&(c.tarefas||[]).find(x=>x.id===tid);
+  if(c&&t&&isProsp(c)&&t.tipo==='followup'&&(t.auto==='retorno'||t.auto==='docs')&&checked&&c.followupDate===t.data)c.followupDate='';
+  _toggleTaskV1(cid,tid,checked);
+};
 
 window.addEventListener('resize',setTop);
 init();

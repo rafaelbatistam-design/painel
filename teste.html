@@ -486,6 +486,7 @@ details.next7[open]>summary{border-bottom:1px solid var(--line);}
 .hm-sub-h{display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--ink-soft);}
 .hm-note{font-size:11px;margin-top:5px;font-weight:600;}
 .dsp{display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r);margin-bottom:6px;background:#fff;}
+.pc-in{padding:4px 7px;border:1px solid var(--line2);border-radius:6px;font-family:inherit;font-size:12px;background:#fff;}
 </style>
 </head>
 <body>
@@ -1405,8 +1406,8 @@ function prospDetail(p){
     <div class="dt-sec-h"><h4>Estágio no funil</h4></div>
     <select style="width:100%;padding:9px 11px;border:1px solid var(--line2);border-radius:var(--r);font-family:inherit;font-size:13px" onchange="updSP('${p.id}',this.value)">${STAGES.map(s=>`<option value="${s.id}" ${p.stage===s.id?'selected':''}>${s.label}</option>`).join('')}</select>
     <div class="info-grid" style="margin-top:10px">
-      <div class="info-cell"><div class="k">Último contato</div><div class="v">${p.lastContact?fDate(p.lastContact)+(since!==null?' · há '+since+'d':''):'-'}</div></div>
-      <div class="info-cell" style="${fuV?'background:var(--red-bg);border-color:var(--red-b)':''}"><div class="k">Follow-up</div><div class="v" style="${fuV?'color:var(--red)':'color:var(--ora)'}">${p.followupDate?fDate(p.followupDate)+(fuV?' · vencido!':''):'-'}</div></div>
+      <div class="info-cell"><div class="k">Último contato${since!==null?' · há '+since+'d':''}</div><div class="v" style="display:flex;gap:6px;align-items:center"><input type="date" class="pc-in" value="${p.lastContact||''}" onchange="setProspCampo('${p.id}','lastContact',this.value)"><button class="alink" onclick="setProspCampo('${p.id}','lastContact',hojeISO())">hoje</button></div></div>
+      <div class="info-cell" style="${fuV?'background:var(--red-bg);border-color:var(--red-b)':''}"><div class="k">Follow-up${fuV?' · vencido':''}</div><div class="v" style="display:flex;gap:6px;align-items:center"><input type="date" class="pc-in" value="${p.followupDate||''}" onchange="setProspCampo('${p.id}','followupDate',this.value)"><button class="alink" onclick="setProspCampo('${p.id}','followupDate',maisDias(7))">+7 dias</button>${p.followupDate?`<button class="alink" onclick="setProspCampo('${p.id}','followupDate','')">limpar</button>`:''}</div></div>
     </div>
   </div>
   ${tasksSection(p)}
@@ -2839,6 +2840,17 @@ function bCont(){
     ${!nfs.length?`<p style="font-size:12px;color:var(--muted)">Nenhuma NF registrada.</p>`:nfs.map((nf,i)=>`<div class="nf-row"><span>${esc(nf.client)}${nf.number?' · NF '+esc(nf.number):''}</span><div style="display:flex;gap:8px;align-items:center"><span style="color:var(--muted)">${fCur(nf.valor)}</span><button class="alink del" onclick="delNF('${mk}',${i})">×</button></div></div>`).join('')}
     ${nfs.length?`<div style="font-size:12.5px;font-weight:700;margin-top:10px">Total: ${fCur(nfs.reduce((s,n)=>s+(n.valor||0),0))}</div>`:''}
   </div>`;
+}
+
+// ── prospecção: último contato e follow-up editáveis na ficha ──
+function setProspCampo(id,campo,v){
+  const p=S.prospeccao.find(x=>x.id===id);if(!p)return;
+  p[campo]=v||'';
+  if(campo==='followupDate'&&v){
+    // a cobrança automática pendente acompanha a nova data
+    (p.tarefas||[]).forEach(t=>{if(!t.feito&&t.tipo==='followup'&&(t.auto==='retorno'||t.auto==='docs'))t.data=v;});
+  }
+  saveData();render();
 }
 
 window.addEventListener('resize',setTop);

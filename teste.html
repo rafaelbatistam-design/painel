@@ -956,7 +956,7 @@ function bCasos(){
   if(S.selCaso&&!S.casos.find(c=>c.id===S.selCaso))S.selCaso=null;
   const view=S.casosView||'lista';
 
-  const FILTERS=[{id:'ativos',label:'Ativos'},{id:'todos',label:'Todos'},{id:'prazos',label:'⚖ Com prazo'},{id:'judicial',label:'Judiciais'},{id:'consultivo',label:'Consultivos'}];
+  const FILTERS=[{id:'ativos',label:'Ativos'},{id:'todos',label:'Todos'},{id:'prazos',label:'⚖ Com prazo'},{id:'judicial',label:'Judiciais'},{id:'consultivo',label:'Consultivos'},{id:'encerrados',label:'Encerrados'}];
   const bar=`${tagFilterBanner()}<div class="top-bar">
     <div class="filters">${FILTERS.map(f=>`<button class="fbtn${S.filter===f.id?' on':''}" onclick="setFilter('${f.id}')">${f.label}</button>`).join('')}</div>
     <div style="display:flex;gap:8px;align-items:center">
@@ -968,7 +968,7 @@ function bCasos(){
   if(view==='kanban'){
     const cols=CASO_COLS;
     return bar+`<div class="kb-scroll"><div class="kb">${cols.map(col=>{
-      const cards=sortC(list.filter(c=>statusEf(c)===col.id));
+      const cards=sortC((S.filter==='ativos'?filterByTag(S.casos).filter(casoMatchesSearch):list).filter(c=>statusEf(c)===col.id));
       return`<div class="kb-col"><div class="kb-col-h" style="border-left-color:${col.color}"><span class="t" style="color:${col.color}">${col.label}</span><span class="c">${cards.length}</span></div>
       <div class="kb-drop" data-status="${col.id}">${cards.map(c=>kbCard(c)).join('')||''}</div></div>`;
     }).join('')}</div></div>`;
@@ -2470,9 +2470,10 @@ function casoFilterList(){
   let base=filterByTag(S.casos).filter(casoMatchesSearch);
   if(S.search)return base;
   if(S.filter==='ativos')base=base.filter(c=>c.status!=='encerrado');
-  else if(S.filter==='judicial')base=base.filter(c=>c.type==='judicial');
-  else if(S.filter==='consultivo')base=base.filter(c=>c.type==='consultivo');
-  else if(S.filter==='prazos')base=base.filter(c=>judTasks(c).length>0);
+  else if(S.filter==='encerrados')base=base.filter(c=>c.status==='encerrado');
+  else if(S.filter==='judicial')base=base.filter(c=>c.type==='judicial'&&c.status!=='encerrado');
+  else if(S.filter==='consultivo')base=base.filter(c=>c.type==='consultivo'&&c.status!=='encerrado');
+  else if(S.filter==='prazos')base=base.filter(c=>c.status!=='encerrado'&&judTasks(c).length>0);
   return base;
 }
 function caseRow(c){
@@ -2939,6 +2940,30 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.ficha&&!document.
 function openFichaNova(id){
   openFicha(id);
   setTimeout(()=>{const el=document.getElementById('nt-txt-'+id);if(el){el.scrollIntoView({block:'center'});el.focus();}},60);
+}
+
+// ── Exportar: retrato do escritório para colar no Claude (sem repetições) ──
+function exportResume(){
+  const L=[];const tl=t=>{const m=TASK_TIPOS[t.tipo]||TASK_TIPOS.tarefa;return tipoNome(t)+(t.data?' '+fDate(t.data):'')+(t.hora?' '+t.hora:'')+(t.tipo==='prazo'&&t.dataInicio?' (abre '+fDate(t.dataInicio)+')':'')+(t.tipo==='julg_virt'&&t.dataFim?' até '+fDate(t.dataFim):'');};
+  L.push('ESTADO ATUAL DO ESCRITÓRIO ('+fDate(hojeISO())+')','');
+  L.push('CASOS ATIVOS:');
+  sortC(ativosC()).forEach(c=>{
+    L.push('• '+c.client+' ['+sLabel(statusEf(c))+']'+(c.tribunal?' · '+c.tribunal:'')+(c.processNumber?' ('+c.processNumber+')':''));
+    pendTasks(c).filter(t=>isJud(t.tipo)).sort((a,b)=>(a.data||'z').localeCompare(b.data||'z')).forEach(t=>L.push('  ⚖ '+tl(t)+': '+t.texto));
+    pendTasks(c).filter(t=>!isJud(t.tipo)).sort((a,b)=>(a.data||'z').localeCompare(b.data||'z')).forEach(t=>{const e=ETAPA_CHIP[etapaOf(t)];L.push('  → '+t.texto+' ['+tl(t)+(e?' · '+e[0].slice(2):'')+']'+(t.foco?' ★':''));});
+    let r=0;(c.honorarios||[]).forEach(h=>r+=(+h.valor||0)-getPago(h));if(r>0)L.push('  $ a receber: '+fCur(r));
+  });
+  L.push('','PROSPECÇÕES ATIVAS:');
+  const ord=['_abrir'].concat(ORDEM_ETAPA);
+  sortP(ativosP()).forEach(p=>{
+    const nt=proxCobranca(p);
+    L.push('• '+p.name+' ['+(precisaCaso(p)?'Contratou, falta abrir o caso':((STAGES.find(s=>s.id===p.stage)||{}).label||p.stage))+']'+(p.subject?' · '+p.subject:'')+(nt?' · próxima: '+nt.texto+' '+fDate(nt.data):''));
+  });
+  const nf=nfStore().length,aj=ajustesPend().length;
+  if(nf||aj){L.push('','CONTÁBIL:');if(nf)L.push('• '+nf+' nota(s) fiscal(is) a emitir');if(aj)L.push('• '+aj+' ajuste(s) PF/PJ pendente(s)');}
+  const txt=L.join('\n');
+  const ok=()=>toast('Copiado. Cole na conversa com o Claude.');
+  if(navigator.clipboard)navigator.clipboard.writeText(txt).then(ok).catch(()=>{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();ok();});
 }
 
 window.addEventListener('resize',setTop);

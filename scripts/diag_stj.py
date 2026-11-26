@@ -11,22 +11,20 @@ def q(body):
             if e.code==429: time.sleep(20*(t+1)); continue
             print("HTTP",e.code,e.read()[:300]); raise
     raise SystemExit("429 persistente")
-G="GABINETE DA MINISTRA NANCY ANDRIGHI"
-print("== amostras Nancy, distribuidos recentes ==")
-r=q({"size":3,"query":{"bool":{"must":[{"term":{"orgaoJulgador.nome.keyword":G}}]}},"sort":[{"dataAjuizamento":{"order":"desc"}}]})
-print("total gabinete:", r["hits"]["total"])
-for h in r["hits"]["hits"]:
-    s=h["_source"]; m=s.pop("movimentos",[])
-    print("KEYS", sorted(s.keys()))
-    print(json.dumps(s,ensure_ascii=False)[:1500])
-    for x in m: print("   MOV", x.get("dataHora"), x.get("codigo"), x.get("nome"), json.dumps(x.get("complementosTabelados",""),ensure_ascii=False)[:150], (x.get("orgaoJulgador") or {}).get("nome",""))
-print("== classes (gabinetes 3a/4a, desde 2025) ==")
-GABS=["GABINETE DA MINISTRA NANCY ANDRIGHI","GABINETE DO MINISTRO MOURA RIBEIRO","GABINETE DO MINISTRO RICARDO VILLAS BÔAS CUEVA","GABINETE DO MINISTRO HUMBERTO EUSTÁQUIO SOARES MARTINS","GABINETE DA MINISTRA DANIELA TEIXEIRA","GABINETE DA MINISTRA MARIA ISABEL GALLOTTI","GABINETE DO MINISTRO ANTONIO CARLOS FERREIRA","GABINETE DO MINISTRO JOÃO OTÁVIO DE NORONHA","GABINETE DO MINISTRO RAUL ARAÚJO FILHO","GABINETE DO MINISTRO MARCO BUZZI"]
-r=q({"size":0,"query":{"bool":{"must":[{"terms":{"orgaoJulgador.nome.keyword":GABS}},{"range":{"dataAjuizamento":{"gte":"2025-01-01"}}}]}},"aggs":{"c":{"terms":{"field":"classe.nome.keyword","size":40}},"g":{"terms":{"field":"orgaoJulgador.nome.keyword","size":20}},"a":{"terms":{"field":"assuntos.nome.keyword","size":80}},"m":{"terms":{"field":"movimentos.nome.keyword","size":80}}}})
-for k in ["g","c","a","m"]:
-    print("--",k); [print(b["doc_count"],"|",b["key"]) for b in r["aggregations"][k]["buckets"]]
-print("== Desembargador convocado Gambogi? ==")
-r=q({"size":0,"query":{"wildcard":{"orgaoJulgador.nome.keyword":"*GAMBOGI*"}}}); print(r["hits"]["total"])
-r=q({"size":0,"query":{"wildcard":{"orgaoJulgador.nome.keyword":"*BELLIZZE*"}},"aggs":{"y":{"date_histogram":{"field":"dataAjuizamento","calendar_interval":"year"}}}}); print("bellizze", r["hits"]["total"], [(b["key_as_string"][:4],b["doc_count"]) for b in r["aggregations"]["y"]["buckets"]][-4:])
-print("== ultima atualizacao ==")
-r=q({"size":0,"aggs":{"mx":{"max":{"field":"dataHoraUltimaAtualizacao"}}}}); print(r["aggregations"]["mx"])
+
+GABS={"Nancy Andrighi":"*NANCY ANDRIGHI*","Moura Ribeiro":"*MOURA RIBEIRO*","Villas Bôas Cueva":"*CUEVA*","Humberto Martins":"*HUMBERTO*MARTINS*","Daniela Teixeira":"*DANIELA TEIXEIRA*",
+ "Isabel Gallotti":"*ISABEL GALLOTTI*","Antonio Carlos Ferreira":"*ANTONIO CARLOS FERREIRA*","Noronha":"*NORONHA*","Raul Araújo":"*RAUL ARA*","Marco Buzzi":"*MARCO BUZZI*","Gambogi":"*GAMBOGI*"}
+FIM=["Trânsito em julgado","Baixa Definitiva","Definitivo"]
+DEC=["Não Conhecimento de recurso","Não-Provimento","Provimento","Provimento em Parte","Conhecimento para não conhecer do Recurso Especial","Conhecimento em Parte e Não-Provimento ou Denegação","conhecimento para conhecer em parte o recurso especial e negar provimento","Conhecimento para negar provimento ao recurso especial","Recurso prejudicado","Conhecimento para dar provimento ao Recurso Especial ","conhecimento para dar parcial provimento ao recurso especial","Desistência","Homologação de Transação","Declaração de competência em conflito","Não conhecimento do pedido","Indeferimento","Extinção","Negação de seguimento","Prejudicado"]
+tot=[0,0,0]
+for nome,pat in GABS.items():
+    base=[{"wildcard":{"orgaoJulgador.nome.keyword":pat}},{"range":{"movimentos.dataHora":{"gte":"2025-11-26"}}}]
+    a=q({"size":0,"track_total_hits":True,"query":{"bool":{"must":base}}})["hits"]["total"]["value"]
+    b=q({"size":0,"track_total_hits":True,"query":{"bool":{"must":base,"must_not":[{"terms":{"movimentos.nome.keyword":FIM}}]}}})["hits"]["total"]["value"]
+    c=q({"size":0,"track_total_hits":True,"query":{"bool":{"must":base,"must_not":[{"terms":{"movimentos.nome.keyword":FIM+DEC}}]}}})["hits"]["total"]["value"]
+    print(f"{nome}: com movimento em 12m={a} | sem baixa/transito={b} | sem decisao={c}"); tot[0]+=a;tot[1]+=b;tot[2]+=c
+print("TOTAL",tot)
+r=q({"size":2,"query":{"bool":{"must":[{"wildcard":{"orgaoJulgador.nome.keyword":"*NANCY ANDRIGHI*"}},{"range":{"movimentos.dataHora":{"gte":"2026-10-01"}}}],"must_not":[{"terms":{"movimentos.nome.keyword":FIM+DEC}}]}},"_source":["numeroProcesso","classe","dataAjuizamento","assuntos","orgaoJulgador","grau","formato","sistema","nivelSigilo","id"]})
+for h in r["hits"]["hits"]: print("SAMPLE", h.get("_id"), json.dumps(h["_source"],ensure_ascii=False)[:900])
+r=q({"size":1,"query":{"bool":{"must":[{"wildcard":{"orgaoJulgador.nome.keyword":"*NANCY ANDRIGHI*"}},{"range":{"movimentos.dataHora":{"gte":"2026-10-01"}}}]}},"_source":["movimentos"]})
+for m in r["hits"]["hits"][0]["_source"]["movimentos"]: print("MOV",m.get("dataHora"),m.get("codigo"),m.get("nome"),(m.get("orgaoJulgador") or {}).get("nome",""),json.dumps(m.get("complementosTabelados",""),ensure_ascii=False)[:120])

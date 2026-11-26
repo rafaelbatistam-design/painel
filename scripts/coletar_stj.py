@@ -17,7 +17,7 @@ MINISTROS = [
     ("Daniela Teixeira",        "3ª Turma", "DANIELA TEIXEIRA"),
     ("Ricardo Villas Bôas Cueva","3ª Turma", "CUEVA"),
     ("Moura Ribeiro",           "3ª Turma", "MOURA RIBEIRO"),
-    ("Humberto Martins",        "3ª Turma", "HUMBERTO EUSTAQUIO SOARES MARTINS"),
+    ("Humberto Martins",        "3ª Turma", "SOARES MARTINS"),
     ("Nancy Andrighi",          "3ª Turma", "NANCY ANDRIGHI"),
     ("Maria Isabel Gallotti",   "4ª Turma", "MARIA ISABEL GALLOTTI"),
     ("Antonio Carlos Ferreira", "4ª Turma", "ANTONIO CARLOS FERREIRA"),
@@ -94,6 +94,11 @@ AREAS = [
 def log(msg):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}", file=sys.stderr, flush=True)
 
+def conserta(s):
+    """Alguns nomes vêm da base com acentos corrompidos (ex.: 'ARAÃ\x9aJO'); tenta recuperar."""
+    try: return s.encode("latin-1").decode("utf-8")
+    except Exception: return s
+
 def sem_acento(s):
     return "".join(c for c in unicodedata.normalize("NFD", s or "") if unicodedata.category(c) != "Mn").lower()
 
@@ -109,7 +114,7 @@ def post_api(body):
                 return json.loads(r.read())
         except urllib.error.HTTPError as e:
             if e.code in (429, 502, 503, 504):
-                espera = 20 * (tentativa + 1); log(f"  HTTP {e.code}, nova tentativa em {espera}s"); time.sleep(espera); continue
+                espera = 30 * (tentativa + 1); log(f"  HTTP {e.code}, nova tentativa em {espera}s"); time.sleep(espera); continue
             log(f"  HTTP {e.code}: {e.read().decode(errors='ignore')[:200]}"); return None
         except Exception as e:
             espera = 15 * (tentativa + 1); log(f"  Erro {e}, nova tentativa em {espera}s"); time.sleep(espera)
@@ -123,7 +128,7 @@ def nomes_gabinetes():
     achados = {}
     for nome, turma, trecho in MINISTROS:
         alvo = sem_acento(trecho)
-        hits = [k for k in chaves if alvo in sem_acento(k) and ("GABINETE" in k.upper() or "DESEMBARGADOR" in k.upper())]
+        hits = [k for k in chaves if alvo in sem_acento(conserta(k)) and ("GABINETE" in k.upper() or "DESEMBARGADOR" in k.upper())]
         if hits:
             achados[nome] = (turma, hits)
             log(f"  {nome}: {hits}")
@@ -164,8 +169,8 @@ def coletar():
                     {"terms": {"classe.nome.keyword": sorted(CLASSES_FORA)}}]
         after, total = None, 0
         while True:
-            body = {"size": 500, "query": {"bool": {"must": must, "must_not": must_not}},
-                    "_source": ["numeroProcesso", "classe", "assuntos", "movimentos", "dataAjuizamento", "orgaoJulgador"],
+            body = {"size": 200, "query": {"bool": {"must": must, "must_not": must_not}},
+                    "_source": ["numeroProcesso", "classe.nome", "assuntos.nome", "movimentos.nome", "movimentos.dataHora", "dataAjuizamento"],
                     "sort": [{"@timestamp": {"order": "asc"}}]}
             if after: body["search_after"] = after
             dados = post_api(body)
@@ -190,11 +195,11 @@ def coletar():
                 procs.append([num, classe, orgao, nome, area_de(assuntos), assuntos, chegada, sit, data_pauta,
                               (ult.get("nome") or "").strip(), (ult.get("dataHora") or "")[:10]])
                 total += 1
-            if len(hits) < 500: break
+            if len(hits) < 200: break
             after = hits[-1].get("sort")
-            time.sleep(1.0)
+            time.sleep(4.0)
         log(f"  {nome}: {total} processos")
-        time.sleep(2.0)
+        time.sleep(5.0)
     procs.sort(key=lambda p: p[6], reverse=True)
     return procs
 

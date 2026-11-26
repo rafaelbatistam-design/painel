@@ -11,6 +11,8 @@ API_KEY = os.environ.get("DATAJUD_API_KEY", "")
 API_URL = "https://api-publica.datajud.cnj.jus.br/api_publica_stj/_search"
 MESES = 12
 # semanal: só as novidades; completo: revisão de toda a janela de 12 meses (1ª segunda do mês)
+INICIO = time.time()
+LIMITE_SEG = 150 * 60
 MODO = os.environ.get("MODO", "semanal").strip().lower()
 
 # Composição atual (guias do STJ: 3ª Turma, ago/2026; 4ª Turma, set/2026).
@@ -159,24 +161,29 @@ def situacao(movs):
     if pauta: return "Em pauta", pauta[:10]
     return "Aguardando julgamento", ""
 
-def meses_janela():
-    """Janelas mensais (início, fim) cobrindo os últimos MESES meses, da mais recente para a mais antiga."""
-    hoje = date.today().replace(day=1)
-    jan = []
-    for k in range(MESES + 1):
-        y, m = hoje.year, hoje.month - k
-        while m <= 0: m += 12; y -= 1
-        ini = date(y, m, 1)
-        fim = date(y + (m == 12), (m % 12) + 1, 1)
-        jan.append((ini.isoformat(), fim.isoformat()))
-    return jan
+try:
+    _cfg = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "stj_excluir.json"), encoding="utf-8"))
+except Exception:
+    _cfg = {}
+EXCLUIR = set(_cfg.get("assuntos", []))
+GENERICOS = set(_cfg.get("genericos", []))
 
-def coletar_janela(nome, turma, chaves, ini, fim, desde):
-    """Coleta um gabinete num mês de autuação. Devolve (linhas, ok)."""
+GRUPOS = [("AREsp", ["Agravo em Recurso Especial"]), ("REsp", ["Recurso Especial"]), ("outros", None)]
+
+def excluido(assuntos):
+    """Fora do monitor: todos os assuntos estão na lista de exclusão ou são genéricos, e ao menos um é da lista."""
+    if not assuntos: return False
+    return any(a in EXCLUIR for a in assuntos) and all(a in EXCLUIR or a in GENERICOS for a in assuntos)
+
+def coletar_gab(nome, turma, chaves, grupo, consulta, desde):
+    """Processos do gabinete, do grupo de classes, com andamento desde a data. Devolve (linhas, ok)."""
+    rot, classes = grupo
     must = [{"terms": {"orgaoJulgador.nome.keyword": chaves}},
-            {"range": {"dataAjuizamento": {"gte": ini, "lt": fim}}}]
+            {"range": {"movimentos.dataHora": {"gte": consulta}}}]
     must_not = [{"terms": {"movimentos.nome.keyword": FIM + DECISOES}},
                 {"terms": {"classe.nome.keyword": sorted(CLASSES_FORA)}}]
+    if classes: must.append({"terms": {"classe.nome.keyword": classes}})
+    elif rot == "outros": must_not.append({"terms": {"classe.nome.keyword": [c for _, cl in GRUPOS if cl for c in cl]}})
     linhas, after = [], None
     while True:
         body = {"size": 200, "query": {"bool": {"must": must, "must_not": must_not}},
@@ -187,15 +194,15 @@ def coletar_janela(nome, turma, chaves, ini, fim, desde):
         if dados is None: return linhas, False
         hits = dados.get("hits", {}).get("hits", [])
         for h in hits:
-            s = h.get("_source", {})
-            num = s.get("numeroProcesso", "")
+            src = h.get("_source", {})
+            num = src.get("numeroProcesso", "")
             if not num: continue
-            classe = (s.get("classe") or {}).get("nome", "")
-            assuntos = [a.get("nome", "").strip() for a in (s.get("assuntos") or []) if isinstance(a, dict) and a.get("nome")]
-            if fora_da_atuacao(assuntos): continue
-            movs = s.get("movimentos") or []
+            classe = (src.get("classe") or {}).get("nome", "")
+            assuntos = [a.get("nome", "").strip() for a in (src.get("assuntos") or []) if isinstance(a, dict) and a.get("nome")]
+            if fora_da_atuacao(assuntos) or excluido(assuntos): continue
+            movs = src.get("movimentos") or []
             distrib = [m.get("dataHora", "") for m in movs if (m.get("nome") or "") in ("Distribuição", "Redistribuição", "Redistribuição por prevenção")]
-            chegada = (min(distrib) if distrib else (s.get("dataAjuizamento") or ""))[:10]
+            chegada = (min(distrib) if distrib else (src.get("dataAjuizamento") or ""))[:10]
             if chegada and chegada < desde: continue
             ult = max(movs, key=lambda m: m.get("dataHora", "")) if movs else {}
             sit, data_pauta = situacao(movs)
@@ -207,63 +214,69 @@ def coletar_janela(nome, turma, chaves, ini, fim, desde):
         time.sleep(4.0)
 
 def coletar(cache):
+    """cache: {numero: linha}. Completo: refaz tudo (o que falhar fica com a coleta anterior).
+    Semanal: só o que teve andamento nas últimas 5 semanas, somado ao cache."""
     desde = (date.today() - timedelta(days=int(MESES * 30.5))).isoformat()
+    consulta = desde if MODO == "completo" else (date.today() - timedelta(days=35)).isoformat()
     log("=== Gabinetes ===")
     gabs = nomes_gabinetes()
     if not gabs:
-        log("Base sem resposta para a lista de gabinetes."); return [], {"falhas": ["lista de gabinetes"]}
-    pendentes, novo_cache, falhas = [], {}, []
-    janelas = meses_janela()
-    # semanal: só os dois meses mais recentes (cobrem as últimas 5 semanas); o resto vem do cache
-    recoletar = janelas[:2] if MODO == "semanal" else janelas
-    for nome, (turma, chaves) in gabs.items():
-        for ini, fim in janelas:
-            chave = nome + "|" + ini[:7]
-            if (ini, fim) in recoletar or chave not in cache:
-                pendentes.append((nome, turma, chaves, ini, fim))
-            else:
-                novo_cache[chave] = cache[chave]
-    log(f"=== Modo {MODO}: {len(pendentes)} janelas a consultar ===")
+        log("Base sem resposta para a lista de gabinetes."); return [], {"falhas": ["lista de gabinetes"], "cache": cache}
+    grupos = GRUPOS if MODO == "completo" else [("todos", None)]
+    pendentes = [(nome, turma, chaves, g) for nome, (turma, chaves) in gabs.items() for g in grupos]
+    log(f"=== Modo {MODO}: {len(pendentes)} consultas, andamentos desde {consulta} ===")
+    novos_dados, ok_set, falhas = {}, set(), []
     for rodada in (1, 2):
         proximas = []
-        for (nome, turma, chaves, ini, fim) in pendentes:
-            chave = nome + "|" + ini[:7]
-            linhas, ok = coletar_janela(nome, turma, chaves, ini, fim, desde)
-            if ok:
-                novo_cache[chave] = {"quando": date.today().isoformat(), "linhas": linhas}
-                log(f"  {nome} {ini[:7]}: {len(linhas)}")
+        for (nome, turma, chaves, g) in pendentes:
+            if time.time() - INICIO > LIMITE_SEG:   # não deixar o GitHub cancelar e perder tudo
+                proximas.append((nome, turma, chaves, g)); continue
+            gg = g if g[0] != "todos" else ("todos", [])
+            if gg[0] == "todos":
+                linhas, ok = coletar_gab_todos(nome, turma, chaves, consulta, desde)
             else:
-                proximas.append((nome, turma, chaves, ini, fim))
-                log(f"  {nome} {ini[:7]}: falhou (rodada {rodada})")
+                linhas, ok = coletar_gab(nome, turma, chaves, gg, consulta, desde)
+            if ok:
+                ok_set.add((nome, g[0]))
+                for l in linhas: novos_dados[l[0]] = l
+                log(f"  {nome} {g[0]}: {len(linhas)}")
+            else:
+                proximas.append((nome, turma, chaves, g)); log(f"  {nome} {g[0]}: falhou (rodada {rodada})")
             time.sleep(3.0)
         pendentes = proximas
-        if not pendentes: break
-        log(f"=== {len(pendentes)} janelas para tentar de novo ===")
-        time.sleep(60)
-    for (nome, turma, chaves, ini, fim) in pendentes:
-        chave = nome + "|" + ini[:7]
-        if chave in cache:
-            novo_cache[chave] = cache[chave]
-            falhas.append(f"{nome} ({ini[5:7]}/{ini[:4]}): dados da coleta de {cache[chave]['quando']}")
-        else:
-            falhas.append(f"{nome} ({ini[5:7]}/{ini[:4]}): sem dados")
-    procs, vistos = [], set()
-    for chave, v in novo_cache.items():
-        for l in v["linhas"]:
-            if l[0] in vistos: continue
-            vistos.add(l[0]); procs.append(l)
-    procs.sort(key=lambda p: p[6], reverse=True)
+        if not pendentes or time.time() - INICIO > LIMITE_SEG: break
+        log(f"=== {len(pendentes)} consultas para tentar de novo ==="); time.sleep(60)
+    def grupo_de(l):
+        for rot, cl in GRUPOS:
+            if cl and l[1] in cl: return rot
+        return "outros"
+    if MODO == "completo":
+        final = dict(novos_dados)
+        for num, l in cache.items():   # o que não pôde ser consultado fica com a coleta anterior
+            if num not in final and (l[3], grupo_de(l)) not in ok_set: final[num] = l
+    else:
+        final = dict(cache); final.update(novos_dados)
+    for (nome, turma, chaves, g) in pendentes:
+        falhas.append(f"{nome} ({g[0]}): mantida a coleta anterior")
+    final = {k: l for k, l in final.items() if (l[6] or "") >= desde and not excluido(l[5])}
+    procs = sorted(final.values(), key=lambda p: p[6], reverse=True)
     porm = {}
     for p in procs: porm[p[3]] = porm.get(p[3], 0) + 1
     log("=== Por ministro ===")
     for k, v in sorted(porm.items()): log(f"  {k}: {v}")
-    return procs, {"falhas": falhas, "cache": novo_cache}
+    return procs, {"falhas": falhas, "cache": final}
+
+def coletar_gab_todos(nome, turma, chaves, consulta, desde):
+    linhas, ok = coletar_gab(nome, turma, chaves, ("todos", None), consulta, desde)
+    return linhas, ok
 
 def main():
     base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "stj")
     global MODO
     try: cache = json.load(open(os.path.join(base, "cache.json"), encoding="utf-8"))
     except Exception: cache = {}
+    if cache and all(isinstance(v, dict) and "linhas" in v for v in cache.values()):
+        cache = {l[0]: l for v in cache.values() for l in v["linhas"]}
     if not cache: MODO = "completo"
     try: vistos = json.load(open(os.path.join(base, "vistos.json"), encoding="utf-8"))
     except Exception: vistos = None
@@ -280,8 +293,7 @@ def main():
     vistos = {p[0]: vistos[p[0]] for p in procs}
     novos = sum(1 for p in procs if vistos[p[0]] == hoje)
     linhas = [[p[0], p[1], p[2], p[3], p[4], [idx[a] for a in p[5]], p[6], p[7], p[8], p[9], p[10], vistos[p[0]]] for p in procs]
-    try: ocultar = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "stj_ocultar.json"), encoding="utf-8"))
-    except Exception: ocultar = {"assuntos": [], "genericos": []}
+    ocultar = {"assuntos": [], "genericos": []}
     agora = datetime.utcnow() - timedelta(hours=3)
     meta = {"atualizado": agora.strftime("%d/%m/%Y %H:%M"), "meses": MESES, "total": len(linhas), "falhas": info.get("falhas", []),
             "modo": MODO, "novos": novos, "hoje": hoje}

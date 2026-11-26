@@ -1,36 +1,35 @@
 #!/usr/bin/env python3
-"""Diagnóstico do DataJud/STJ: lista os órgãos julgadores e mostra um exemplo de
-processo, para calibrar o Monitor STJ. Só lê dados públicos e imprime no log."""
-import json, os, urllib.request
+"""Diagnóstico leve do DataJud/STJ: identifica como aparecem os gabinetes e órgãos
+(3ª e 4ª Turmas, 2ª Seção, Corte Especial) e mostra um exemplo de processo."""
+import json, os, time, urllib.request, urllib.error
 KEY=os.environ["DATAJUD_API_KEY"]
 URL="https://api-publica.datajud.cnj.jus.br/api_publica_stj/_search"
-import time, urllib.error
 def q(body):
-    for t in range(6):
+    for t in range(4):
         req=urllib.request.Request(URL,data=json.dumps(body).encode(),headers={"Content-Type":"application/json","Authorization":"APIKey "+KEY},method="POST")
         try:
-            with urllib.request.urlopen(req,timeout=120) as r: return json.loads(r.read())
+            with urllib.request.urlopen(req,timeout=60) as r: return json.loads(r.read())
         except urllib.error.HTTPError as e:
-            print("HTTP",e.code,e.read().decode()[:300]); time.sleep(30*(t+1))
-    raise SystemExit("falhou")
-# 1) órgãos julgadores com movimento no último ano
-r=q({"size":0,"query":{"range":{"movimentos.dataHora":{"gte":"now-120d"}}},
-     "aggs":{"o":{"terms":{"field":"orgaoJulgador.codigo","size":400},
-       "aggs":{"n":{"top_hits":{"size":1,"_source":["orgaoJulgador"]}}}}}})
-print("TOTAL_ULTIMO_ANO",r["hits"]["total"])
-for b in r["aggregations"]["o"]["buckets"]:
-    oj=b["n"]["hits"]["hits"][0]["_source"].get("orgaoJulgador",{})
-    print("ORGAO",b["key"],b["doc_count"],json.dumps(oj,ensure_ascii=False))
-# 2) amostra completa de um processo recente
-r=q({"size":2,"query":{"range":{"movimentos.dataHora":{"gte":"now-30d"}}},"sort":[{"dataHoraUltimaAtualizacao":{"order":"desc"}}]})
+            print("HTTP",e.code); time.sleep(20*(t+1))
+    return {"hits":{"hits":[],"total":{}}}
+termos=["ANDRIGHI","VILLAS","BELLIZZE","MOURA RIBEIRO","ANTONIO CARLOS","BUZZI","SALOMÃO","NORONHA","RAUL ARAÚJO","GALLOTTI",
+        "CUEVA","FERREIRA","TERCEIRA TURMA","QUARTA TURMA","SEGUNDA SEÇÃO","CORTE ESPECIAL","PRESIDÊNCIA","VICE-PRESIDÊNCIA"]
+vistos={}
+for t in termos:
+    r=q({"size":20,"query":{"match_phrase":{"orgaoJulgador.nome":t}},"_source":["orgaoJulgador"],"sort":[{"dataHoraUltimaAtualizacao":{"order":"desc"}}]})
+    print("BUSCA",t,"total",r["hits"].get("total"))
+    for h in r["hits"]["hits"]:
+        oj=h["_source"].get("orgaoJulgador",{});k=oj.get("codigo")
+        if k not in vistos: vistos[k]=oj; print("ORGAO",json.dumps(oj,ensure_ascii=False))
+    time.sleep(2)
+# amostra: processos recentes, com órgãos variados
+r=q({"size":60,"query":{"range":{"dataHoraUltimaAtualizacao":{"gte":"now-2d"}}},"_source":["orgaoJulgador","classe"]})
+for h in r["hits"]["hits"]:
+    oj=h["_source"].get("orgaoJulgador",{});k=oj.get("codigo")
+    if k not in vistos: vistos[k]=oj; print("ORGAO_RECENTE",json.dumps(oj,ensure_ascii=False))
+# um processo completo de gabinete de turma de direito privado
+r=q({"size":1,"query":{"match_phrase":{"orgaoJulgador.nome":"ANDRIGHI"}},"sort":[{"dataHoraUltimaAtualizacao":{"order":"desc"}}]})
 for h in r["hits"]["hits"]:
     s=h["_source"];mv=sorted(s.get("movimentos",[]),key=lambda m:m.get("dataHora",""))
-    s2={k:v for k,v in s.items() if k!="movimentos"}
-    print("AMOSTRA",json.dumps(s2,ensure_ascii=False)[:1500])
-    for m in mv[-12:]: print("  MOV",json.dumps(m,ensure_ascii=False)[:300])
-# 3) códigos de movimento mais comuns (para identificar julgado, baixa, trânsito)
-r=q({"size":0,"query":{"range":{"movimentos.dataHora":{"gte":"now-90d"}}},
-     "aggs":{"m":{"terms":{"field":"movimentos.codigo","size":80},"aggs":{"n":{"top_hits":{"size":1,"_source":["movimentos.codigo","movimentos.nome"]}}}}}})
-for b in r["aggregations"]["m"]["buckets"]:
-    nomes={m.get("codigo"):m.get("nome") for m in b["n"]["hits"]["hits"][0]["_source"].get("movimentos",[])}
-    print("MOVCOD",b["key"],b["doc_count"],nomes.get(b["key"]))
+    print("AMOSTRA",json.dumps({k:v for k,v in s.items() if k!="movimentos"},ensure_ascii=False)[:2500])
+    for m in mv[-15:]: print("  MOV",json.dumps(m,ensure_ascii=False)[:260])

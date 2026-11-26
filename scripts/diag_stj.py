@@ -1,0 +1,21 @@
+import json, os, urllib.request
+KEY=os.environ.get("DATAJUD_API_KEY","")
+URL="https://api-publica.datajud.cnj.jus.br/api_publica_stj/_search"
+def q(body):
+    req=urllib.request.Request(URL,data=json.dumps(body).encode(),headers={"Content-Type":"application/json","Authorization":"APIKey "+KEY},method="POST")
+    with urllib.request.urlopen(req,timeout=90) as r: return json.loads(r.read())
+print("== orgaos julgadores (processos desde 2025) ==")
+r=q({"size":0,"query":{"range":{"dataAjuizamento":{"gte":"2025-01-01"}}},"aggs":{"o":{"terms":{"field":"orgaoJulgador.nome.keyword","size":200}}}})
+for b in r["aggregations"]["o"]["buckets"]: print(b["doc_count"], "|", b["key"])
+print("== codigos ==")
+r=q({"size":0,"query":{"range":{"dataAjuizamento":{"gte":"2025-01-01"}}},"aggs":{"o":{"terms":{"field":"orgaoJulgador.codigo","size":200},"aggs":{"n":{"terms":{"field":"orgaoJulgador.nome.keyword","size":2}}}}}})
+for b in r["aggregations"]["o"]["buckets"]: print(b["key"], b["doc_count"], [x["key"] for x in b["n"]["buckets"]])
+print("== amostra ==")
+r=q({"size":1,"query":{"match_all":{}},"sort":[{"dataHoraUltimaAtualizacao":{"order":"desc"}}]})
+s=r["hits"]["hits"][0]["_source"]; m=s.pop("movimentos",[])
+print(json.dumps(s,ensure_ascii=False)[:3000]); print("movs:",len(m)); print(json.dumps(m[-5:],ensure_ascii=False)[:2500])
+print("== total e atualizacao ==")
+r=q({"size":0,"aggs":{"mx":{"max":{"field":"dataHoraUltimaAtualizacao"}}}}); print(r["hits"]["total"], r["aggregations"]["mx"])
+print("== movimentos mais comuns (2025+) ==")
+r=q({"size":0,"query":{"range":{"dataAjuizamento":{"gte":"2025-06-01"}}},"aggs":{"m":{"terms":{"field":"movimentos.codigo","size":60},"aggs":{"n":{"terms":{"field":"movimentos.nome.keyword","size":1}}}}}})
+for b in r["aggregations"]["m"]["buckets"]: print(b["key"], b["doc_count"], [x["key"] for x in b["n"]["buckets"]])

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Monitor STJ · Marquez Advogados</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--paper:#efeee9;--paper2:#e7e5de;--ink:#1b2a4a;--soft:#3a4a6b;--muted:#647089;--faint:#98a1b4;--line:rgba(27,42,74,.09);--line2:rgba(27,42,74,.18);
+  --blu:#1d4ed8;--blu-bg:#e8eefc;--grn:#15803d;--grn-bg:#eaf6ee;--ora:#b45309;--ora-bg:#fdf3e3;--jud:#a01a12;--jud-bg:#f7e4e2;--car:#3b5ea6;--car-bg:#e9eef8}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;padding:22px 28px 14px}
+h1{font-size:20px;font-weight:700;letter-spacing:-.3px}
+.sub{font-size:12px;color:var(--muted);margin-top:3px}
+.voltar{font-size:12px;color:var(--blu);text-decoration:none;font-weight:600}
+.cards{display:flex;gap:10px;flex-wrap:wrap;padding:0 28px 14px}
+.card{background:#fff;border:1px solid var(--line);border-radius:11px;padding:10px 14px;min-width:130px;cursor:pointer}
+.card:hover{border-color:var(--ink)}
+.card.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.card .k{font-size:10.5px;color:var(--muted);font-weight:600}
+.card .v{font-size:21px;font-weight:700;margin-top:2px}
+.filtros{display:flex;gap:7px;flex-wrap:wrap;align-items:center;padding:12px 28px;background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.filtros input,.filtros select{padding:7px 10px;border:1px solid var(--line2);border-radius:7px;font-family:inherit;font-size:12.5px;background:#fff;color:var(--ink);outline:none;max-width:230px}
+.filtros input[type=search]{flex:1;min-width:220px;max-width:380px}
+.filtros input:focus,.filtros select:focus{border-color:var(--ink)}
+.limpar{font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:underline}
+.cnt{margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap}
+.wrap{padding:14px 28px 50px}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+th{text-align:left;font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;padding:9px 10px;border-bottom:1px solid var(--line2);background:#fbfaf7;white-space:nowrap;cursor:pointer;user-select:none}
+th.on{color:var(--ink)}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:hover td{background:#fbfaf7}
+.num{font-family:'DM Mono',monospace;font-size:11.5px;white-space:nowrap}
+.num a{color:var(--blu);text-decoration:none;font-weight:600}
+.num a:hover{text-decoration:underline}
+.copiar{border:1px solid var(--line2);background:#fff;border-radius:5px;font-size:10px;padding:1px 6px;cursor:pointer;color:var(--muted);margin-left:4px;font-family:inherit}
+.copiar:hover{color:var(--ink);border-color:var(--ink)}
+.pill{display:inline-block;font-size:10.5px;font-weight:600;padding:1px 8px;border-radius:11px;white-space:nowrap}
+.o3{background:var(--blu-bg);color:var(--blu)}.o4{background:var(--car-bg);color:var(--car)}.os{background:var(--jud-bg);color:var(--jud)}
+.s-aj{background:var(--paper2);color:var(--soft)}.s-pa{background:var(--ora-bg);color:var(--ora)}
+.area{font-size:11.5px;font-weight:600;color:var(--grn)}
+.ass{font-size:11.5px;color:var(--soft);line-height:1.4;max-width:340px}
+.ass span{cursor:pointer}.ass span:hover{color:var(--blu);text-decoration:underline}
+.and{font-size:11px;color:var(--muted)}
+.mais{display:block;margin:14px auto 0;padding:9px 18px;border:1px solid var(--line2);background:#fff;border-radius:8px;font-family:inherit;font-size:12.5px;cursor:pointer}
+.aviso{font-size:11.5px;color:var(--muted);padding:0 28px 10px}
+.vazio{padding:40px;text-align:center;color:var(--muted)}
+@media(max-width:800px){header,.cards,.filtros,.wrap,.aviso{padding-left:12px;padding-right:12px}.col-and,.col-ass{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Monitor STJ</h1><div class="sub" id="sub"></div></div>
+  <a class="voltar" href="../">‹ Voltar ao painel</a>
+</header>
+<div class="aviso">Direito privado · 3ª e 4ª Turmas e 2ª Seção · processos sem decisão, distribuídos nos últimos 12 meses. Fonte: base pública do CNJ (DataJud), que fica algumas semanas atrás do site do STJ. A 2ª Seção é identificada pelo tipo de processo (embargos de divergência, conflito de competência, reclamação e rescisória).</div>
+<div class="cards" id="cards"></div>
+<div class="filtros">
+  <input type="search" id="q" placeholder="Buscar tema, assunto, classe ou número…">
+  <select id="f-orgao"></select><select id="f-min"></select><select id="f-area"></select><select id="f-ass"></select><select id="f-classe"></select><select id="f-sit"></select><select id="f-per"></select>
+  <button class="limpar" onclick="limpar()">limpar filtros</button>
+  <span class="cnt" id="cnt"></span>
+</div>
+<div class="wrap"><table><thead><tr id="th"></tr></thead><tbody id="tb"></tbody></table><div id="vazio" class="vazio" style="display:none">Nenhum processo com esses filtros.</div><button class="mais" id="mais" onclick="maisPag()">Mostrar mais</button></div>
+<script src="data.js?v=__VERSAO__"></script>
+<script>
+(function(){
+const M=window.STJ_META||{},A=window.STJ_ASSUNTOS||[],R=(window.STJ_DADOS||[]).map(r=>({num:r[0],classe:r[1],orgao:r[2],min:r[3],area:r[4],ass:r[5].map(i=>A[i]),cheg:r[6],sit:r[7],pauta:r[8],ult:r[9],dult:r[10]}));
+const PAG=150;let pag=1,ord={k:'cheg',d:-1};
+const $=id=>document.getElementById(id);
+const sa=s=>(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const fD=d=>d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';
+const cnj=n=>n&&n.length===20?n.slice(0,7)+'-'+n.slice(7,9)+'.'+n.slice(9,13)+'.'+n.slice(13,14)+'.'+n.slice(14,16)+'.'+n.slice(16):n;
+const sigla=c=>({'Agravo em Recurso Especial':'AREsp','Recurso Especial':'REsp','Conflito de Competência':'CC','Embargos de Divergência em Recurso Especial':'EREsp','Embargos de Divergência em Agravo em Recurso Especial':'EAREsp','Reclamação':'Rcl','Ação Rescisória':'AR','Tutela Cautelar Antecedente':'TutCautAnt','Tutela Antecipada Antecedente':'TutAntAnt','Mandado de Segurança':'MS','Recurso Ordinário em Mandado de Segurança':'RMS','Petição':'Pet'}[c]||c);
+$('sub').textContent='Atualizado em '+(M.atualizado||'?')+' · '+R.length+' processos';
+function conta(f){const m={};R.forEach(r=>{const k=f(r);m[k]=(m[k]||0)+1});return Object.entries(m).sort((a,b)=>b[1]-a[1]);}
+function opts(id,rot,pares,ordenar){const s=$(id);const l=ordenar?pares.slice().sort((a,b)=>a[0].localeCompare(b[0],'pt-BR')):pares;s.innerHTML=`<option value="">${rot}</option>`+l.map(([k,n])=>`<option value="${k.replace(/"/g,'&quot;')}">${k} (${n})</option>`).join('');}
+opts('f-orgao','Todos os órgãos',conta(r=>r.orgao));
+opts('f-min','Todos os ministros',conta(r=>r.min),true);
+opts('f-area','Todas as áreas',conta(r=>r.area));
+function assOpts(){const a=$('f-area').value;const m={};R.forEach(r=>{if(a&&r.area!==a)return;r.ass.forEach(x=>m[x]=(m[x]||0)+1)});const v=$('f-ass').value;opts('f-ass','Todos os assuntos',Object.entries(m).sort((x,y)=>y[1]-x[1]));if(v&&m[v])$('f-ass').value=v;}
+assOpts();
+opts('f-classe','Todas as classes',conta(r=>r.classe));
+opts('f-sit','Todas as situações',conta(r=>r.sit));
+$('f-per').innerHTML='<option value="">Chegada: 12 meses</option><option value="30">últimos 30 dias</option><option value="90">últimos 3 meses</option><option value="180">últimos 6 meses</option>';
+const cards=[['Total',()=>true],['3ª Turma',r=>r.orgao==='3ª Turma'],['4ª Turma',r=>r.orgao==='4ª Turma'],['2ª Seção',r=>r.orgao==='2ª Seção'],['Em pauta',r=>r.sit==='Em pauta']];
+$('cards').innerHTML=cards.map(([l,f],i)=>`<div class="card" data-i="${i}" onclick="cardClick(${i})"><div class="k">${l}</div><div class="v">${R.filter(f).length}</div></div>`).join('');
+window.cardClick=i=>{limpar(true);if(i===1||i===2||i===3)$('f-orgao').value=cards[i][0];if(i===4)$('f-sit').value='Em pauta';pag=1;desenhar();};
+const COLS=[['num','Processo'],['classe','Classe'],['orgao','Órgão'],['min','Relator'],['area','Área'],['ass','Assuntos'],['cheg','Chegada ao STJ'],['sit','Situação'],['ult','Último andamento']];
+function filtrados(){
+  const q=sa($('q').value).trim(),o=$('f-orgao').value,mi=$('f-min').value,ar=$('f-area').value,as=$('f-ass').value,cl=$('f-classe').value,si=$('f-sit').value,pe=+$('f-per').value||0;
+  const lim=pe?new Date(Date.now()-pe*864e5).toISOString().slice(0,10):'';
+  const termos=q?q.split(/\s+/):[];
+  let l=R.filter(r=>(!o||r.orgao===o)&&(!mi||r.min===mi)&&(!ar||r.area===ar)&&(!as||r.ass.includes(as))&&(!cl||r.classe===cl)&&(!si||r.sit===si)&&(!lim||r.cheg>=lim)
+    &&(!termos.length||termos.every(t=>sa(r.num+' '+cnj(r.num)+' '+r.classe+' '+sigla(r.classe)+' '+r.min+' '+r.area+' '+r.ass.join(' ')+' '+r.ult).includes(t))));
+  const k=ord.k;l.sort((a,b)=>{const x=k==='ass'?a.ass.join():a[k]||'',y=k==='ass'?b.ass.join():b[k]||'';return x<y?-ord.d:x>y?ord.d:0;});
+  return l;
+}
+function desenhar(){
+  const l=filtrados();const vis=l.slice(0,pag*PAG);
+  $('cnt').textContent=l.length+' processo'+(l.length!==1?'s':'');
+  $('th').innerHTML=COLS.map(([k,t])=>`<th class="${ord.k===k?'on':''} col-${k}" onclick="ordenar('${k}')">${t}${ord.k===k?(ord.d<0?' ▼':' ▲'):''}</th>`).join('');
+  $('tb').innerHTML=vis.map(r=>`<tr>
+    <td class="num"><a href="https://consulta-processo.web.stj.jus.br/consulta" target="_blank" title="Abrir a consulta processual do STJ (cole o número em Número Origem)">${cnj(r.num)}</a><button class="copiar" onclick="copiar('${r.num}',this)">copiar</button></td>
+    <td><b>${sigla(r.classe)}</b></td>
+    <td><span class="pill ${r.orgao==='3ª Turma'?'o3':r.orgao==='4ª Turma'?'o4':'os'}">${r.orgao}</span></td>
+    <td>${r.min}</td>
+    <td class="area">${r.area}</td>
+    <td class="ass col-ass">${r.ass.map(a=>`<span onclick="porAssunto(this)">${a}</span>`).join('; ')}</td>
+    <td style="white-space:nowrap">${fD(r.cheg)}</td>
+    <td><span class="pill ${r.sit==='Em pauta'?'s-pa':'s-aj'}">${r.sit}${r.pauta?' '+fD(r.pauta):''}</span></td>
+    <td class="and col-and">${r.ult}${r.dult?' ('+fD(r.dult)+')':''}</td></tr>`).join('');
+  $('vazio').style.display=l.length?'none':'block';
+  $('mais').style.display=l.length>vis.length?'block':'none';
+  $('mais').textContent='Mostrar mais ('+(l.length-vis.length)+' restantes)';
+}
+window.ordenar=k=>{ord.k===k?ord.d*=-1:(ord={k,d:k==='cheg'||k==='dult'?-1:1});desenhar();};
+window.porAssunto=el=>{$('f-ass').value=el.textContent;if(!$('f-ass').value){$('f-area').value='';assOpts();$('f-ass').value=el.textContent;}pag=1;desenhar();window.scrollTo(0,0);};
+window.copiar=(n,b)=>{const t=cnj(n);(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{b.textContent='copiado';setTimeout(()=>b.textContent='copiar',1500)}).catch(()=>prompt('Copie o número:',t));};
+window.limpar=silencioso=>{['q','f-orgao','f-min','f-area','f-ass','f-classe','f-sit','f-per'].forEach(id=>$(id).value='');assOpts();pag=1;if(silencioso!==true)desenhar();};
+let tm;$('q').addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(()=>{pag=1;desenhar()},200)});
+['f-orgao','f-min','f-classe','f-sit','f-per','f-ass'].forEach(id=>$(id).addEventListener('change',()=>{pag=1;desenhar()}));
+$('f-area').addEventListener('change',()=>{assOpts();pag=1;desenhar()});
+window.maisPag=()=>{pag+=1;desenhar();};
+desenhar();
+})();
+</script>
+</body>
+</html>

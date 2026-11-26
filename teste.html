@@ -487,6 +487,10 @@ details.next7[open]>summary{border-bottom:1px solid var(--line);}
 .hm-note{font-size:11px;margin-top:5px;font-weight:600;}
 .dsp{display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r);margin-bottom:6px;background:#fff;}
 .pc-in{padding:4px 7px;border:1px solid var(--line2);border-radius:6px;font-family:inherit;font-size:12px;background:#fff;}
+.pv-link{cursor:pointer;}
+.pv-link:hover{color:var(--blu);text-decoration:underline;}
+.task-click{cursor:pointer;}
+.task-click:hover{color:var(--blu);}
 </style>
 </head>
 <body>
@@ -1972,7 +1976,7 @@ function dashRow(o){
   return`<div class="dr ${d!==null&&d<0?'over':''}">
     <input type="checkbox" class="dr-chk" title="Concluir" onchange="toggleTask('${c.id}','${t.id}',this.checked)">
     <button class="star ${t.foco?'on':''}" title="${t.foco?'Tirar de hoje':'Fazer hoje'}" onclick="toggleFoco('${c.id}','${t.id}')">${t.foco?'★':'☆'}</button>
-    <div class="dr-c"><div class="dr-txt">${esc(t.texto)}</div>
+    <div class="dr-c"><div class="dr-txt task-click" onclick="openFicha('${c.id}','${t.id}')" title="Clique para editar">${esc(t.texto)}</div>
       <div class="dr-meta">${chipTipo(t)}${chipEtapa(t)}<span class="dr-cli" onclick="${goItem(c)}">${esc(itemName(c))}</span>${o.isP?'<span style="color:var(--faint)">prospecção</span>':''}${subs.length?`<span>☑ ${sd}/${subs.length}</span>`:''}</div></div>
     <div class="dr-when" style="color:${w.col}">${w.txt}</div></div>`;
 }
@@ -2060,13 +2064,13 @@ function bProv(){
     const closed=!!_pvClosed[g.c.id];const first=g.list[0];const w=whenOf(first.t,first.d);
     return`<div class="pv-group">
       <div class="pv-gh" onclick="pvToggle('${g.c.id}')">
-        <span class="pv-caret">${closed?'▸':'▾'}</span>
-        <span class="pv-name">${esc(itemName(g.c))}</span>
+        <span class="pv-caret" title="${closed?'Mostrar':'Recolher'}">${closed?'▸':'▾'}</span>
+        <span class="pv-name pv-link" onclick="event.stopPropagation();openFicha('${g.c.id}')" title="Abrir a ficha">${esc(itemName(g.c))}</span>
         ${g.isP?'<span class="chip" style="color:var(--car);background:var(--car-bg);border-color:var(--car-b)">prospecção</span>':''}
         <span class="pv-cnt">${g.list.length}</span>
         <span style="flex:1"></span>
         <span style="font-size:11.5px;font-weight:700;color:${w.col}">${w.txt}</span>
-        <button class="alink" onclick="event.stopPropagation();${goItem(g.c)}">abrir ›</button>
+        <button class="alink" onclick="event.stopPropagation();openFicha('${g.c.id}')">abrir ›</button>
       </div>
       ${closed?'':`<div class="pv-body">${g.list.map(o=>taskRow(o.c,o.t)).join('')}
         <div class="pv-gadd"><input placeholder="+ providência para ${esc(itemName(g.c))} (Enter)" onkeydown="if(event.key==='Enter'&&this.value.trim()){quickAdd('${g.c.id}',this.value)}"></div></div>`}
@@ -2166,7 +2170,7 @@ function taskRow(c,t){
   return`<div class="task" data-tid="${t.id}" style="${rowStyle}">
     <input type="checkbox" class="task-chk" ${t.feito?'checked':''} onchange="toggleTask('${c.id}','${t.id}',this.checked)">
     <div class="task-c">
-      <div class="task-txt" style="${t.feito?'text-decoration:line-through':''}">${esc(t.texto)}</div>
+      <div class="task-txt task-click" style="${t.feito?'text-decoration:line-through':''}" onclick="startTaskEdit('${c.id}','${t.id}')" title="Clique para editar">${esc(t.texto)}</div>
       <div class="task-meta">${chipTipo(t)}${chipEtapa(t)}${dateHtml}${t.data&&!t.feito?`<a href="${gcalTask(c,t)}" target="_blank" class="mini-cal" style="padding:1px 6px">Agenda</a>`:''}${subBtn}</div>
       ${subList}
     </div>
@@ -2903,6 +2907,27 @@ applyP=function(p,field,value){
   }
   _applyPV2(p,field,value);
 };
+
+// ── ficha em painel lateral, sem sair da aba atual ─────
+const ABAS_FICHA=['dashboard','prov','honorarios','contabil'];
+function openFicha(id,tid){S.ficha=id;_editTaskId=tid||null;render();if(tid)setTimeout(()=>{const el=document.getElementById('et-txt-'+tid);if(el){el.focus();el.select();}},60);}
+function fecharFichaAba(){S.ficha=null;_editTaskId=null;render();}
+function goCaso(id){if(ABAS_FICHA.includes(S.tab)){openFicha(id);return;}S.ficha=null;S.tab='casos';S.selCaso=id;S.mobileDetail=true;S.casosView='lista';render();window.scrollTo(0,0);}
+function goProsp(id){if(ABAS_FICHA.includes(S.tab)){openFicha(id);return;}S.ficha=null;S.tab='prospeccao';S.selProsp=id;S.mobileDetail=true;S.prospView='lista';render();window.scrollTo(0,0);}
+function fichaDrawer(){
+  if(!S.ficha||!ABAS_FICHA.includes(S.tab))return'';
+  const x=findItem(S.ficha);if(!x){S.ficha=null;return'';}
+  return`<div class="drawer-bg" onclick="fecharFichaAba()"></div><div class="md-detail open"><button class="drawer-x" onclick="fecharFichaAba()" title="Fechar (Esc)">× Fechar</button>${isProsp(x)?prospDetail(x):caseDetail(x)}</div>`;
+}
+const _renderV2=render;
+render=function(){
+  _renderV2();
+  const d=fichaDrawer();
+  if(d)document.getElementById('tab-body').insertAdjacentHTML('beforeend',d);
+};
+const _setTabV2=setTab;
+setTab=function(t){S.ficha=null;_setTabV2(t);};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.ficha&&!document.getElementById('modal-main').classList.contains('open'))fecharFichaAba();});
 
 window.addEventListener('resize',setTop);
 init();

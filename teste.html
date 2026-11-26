@@ -1404,7 +1404,7 @@ function prospDetail(p){
         ${p.subject?`<span>·</span><span>${esc(p.subject)}</span>`:''}
       </div>
     </div>
-    <div class="dt-actions">${p.casoId&&S.casos.find(c=>c.id===p.casoId)?`<button class="iconbtn" onclick="goCaso('${p.casoId}')">Ver caso</button>`:`<button class="btn btn-pri btn-sm" onclick="openConvert('${p.id}')">Abrir caso</button>`}<button class="iconbtn" onclick="startProspEdit('${p.id}')" title="Editar dados">Editar</button><button class="iconbtn del" onclick="delSP('${p.id}')" title="Remover">Remover</button></div>
+    <div class="dt-actions">${casoVinculado(p)?`<button class="iconbtn" onclick="goCaso('${p.casoId}')">Ver caso: ${esc(casoVinculado(p).client)}</button>`:`<button class="btn btn-pri btn-sm" onclick="openConvert('${p.id}')">Abrir caso</button><button class="iconbtn" onclick="jaTemCaso('${p.id}')">Vincular a caso existente</button>`}<button class="iconbtn" onclick="startProspEdit('${p.id}')" title="Editar dados">Editar</button><button class="iconbtn del" onclick="delSP('${p.id}')" title="Remover">Remover</button></div>
   </div>
   ${(p.tagIds||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px">${(p.tagIds||[]).map(id=>tagPill(id)).join('')}</div>`:''}
 </div>
@@ -1970,7 +1970,7 @@ function dashRow(o){
     return`<div class="dr"><span style="width:18px;text-align:center;color:var(--grn);font-weight:700">✓</span>
       <div class="dr-c"><div class="dr-txt">Contratou: abrir o caso</div><div class="dr-meta"><span class="dr-cli" onclick="goProsp('${p.id}')">${esc(p.name)}</span>${p.subject?' · '+esc(p.subject):''}</div></div>
       <button class="btn btn-pri btn-sm conv-btn" onclick="openConvert('${p.id}')">Abrir caso</button>
-      <button class="btn btn-ghost btn-sm conv-btn" onclick="jaTemCaso('${p.id}')" title="O caso já existe no painel">Já tem caso</button></div>`;
+      <button class="btn btn-ghost btn-sm conv-btn" onclick="jaTemCaso('${p.id}')" title="O caso já existe no painel">Já existe: vincular</button></div>`;
   }
   if(o.kind==='fu'){
     const p=o.p;const w=o.d<0?{txt:Math.abs(o.d)+'d de atraso',col:'var(--red)'}:o.d===0?{txt:'hoje',col:'var(--ora)'}:{txt:fDateShort(p.followupDate),col:'var(--blu)'};
@@ -2453,9 +2453,27 @@ const _setTopV2=setTop;
 setTop=function(){_setTopV2();document.documentElement.style.setProperty('--topH',document.getElementById('ubar').offsetHeight+'px');};
 function setTab(t){S.tab=t;S.editId=null;S.editHonId=null;S.editHonHid=null;_editTaskId=null;S.mobileDetail=false;S.search='';render();window.scrollTo(0,0);}
 // prospecção que contratou mas ainda não virou caso continua ativa
-function precisaCaso(p){return p.stage==='contratou'&&!p.casoId;}
+function precisaCaso(p){return p.stage==='contratou'&&(!p.casoId||(p.casoId!=='existente'&&!S.casos.find(c=>c.id===p.casoId)));}
 function ativosP(){return S.prospeccao.filter(p=>!['contratou','nao_contratou'].includes(p.stage)||precisaCaso(p));}
-function jaTemCaso(pid){const p=S.prospeccao.find(x=>x.id===pid);if(!p)return;p.casoId='existente';if(!p.historico)p.historico=[];p.historico.unshift({id:uid(),data:hojeISO(),texto:'Marcada como já tendo caso aberto'});saveData();render();}
+function casoVinculado(p){return p.casoId?S.casos.find(c=>c.id===p.casoId)||null:null;}
+function jaTemCaso(pid){
+  const p=S.prospeccao.find(x=>x.id===pid);if(!p)return;
+  const q=(p.name||'').toLowerCase().split(/[\s(--]+/)[0];
+  const lista=[...S.casos].sort((a,b)=>{const ma=a.client.toLowerCase().includes(q)?0:1,mb=b.client.toLowerCase().includes(q)?0:1;return ma-mb||a.client.localeCompare(b.client,'pt-BR');});
+  document.getElementById('modal-title').textContent='Vincular '+p.name+' a um caso existente';
+  document.getElementById('modal-body').innerHTML=`<p style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Escolha o caso que corresponde a esta prospecção. Assim a prospecção sai das ativas e a ficha dela passa a ter o botão "Ver caso".</p>
+    <select id="vinc-caso" style="width:100%;padding:9px 11px;border:1px solid var(--line2);border-radius:var(--r);font-family:inherit;font-size:13px">${lista.map(c=>`<option value="${c.id}">${esc(c.client)}${c.status==='encerrado'?' (encerrado)':''}</option>`).join('')}</select>
+    <div class="factions" style="justify-content:space-between"><button class="btn btn-ghost" onclick="closeModal();openConvert('${p.id}')">Não existe: abrir caso novo</button>
+    <div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-pri" onclick="vincular('${p.id}')">Vincular</button></div></div>`;
+  document.getElementById('modal-main').classList.add('open');
+}
+function vincular(pid){
+  const p=S.prospeccao.find(x=>x.id===pid);const c=S.casos.find(x=>x.id===gv('vinc-caso'));if(!p||!c)return;
+  p.casoId=c.id;if(p.stage!=='contratou')p.stage='contratou';
+  if(!p.historico)p.historico=[];p.historico.unshift({id:uid(),data:hojeISO(),texto:'Vinculada ao caso '+c.client});
+  if(!c.historico)c.historico=[];c.historico.unshift({id:uid(),data:hojeISO(),texto:'Origem: prospecção '+p.name});
+  closeModal();saveData();render();toast(p.name+' vinculada ao caso '+c.client+'.');
+}
 function prospList(){
   let base=filterByTag(S.prospeccao).filter(prospMatch);
   if(S.search)return base;
@@ -2500,7 +2518,7 @@ function prospRow(p){
     <div class="md-row-bar" style="background:${sc.fg};opacity:.55"></div>
     <div class="md-row-c"><div class="md-row-name">${esc(p.name)}</div>
       <div class="md-row-meta"><span style="color:${sc.fg};font-weight:600">${stLabel}</span>${p.subject?' · '+esc(p.subject):''}</div>
-      ${precisaCaso(p)?`<div class="md-row-next" style="color:var(--red);font-weight:600">Contratou: falta abrir o caso</div>`:nt?`<div class="md-row-next">${esc(nt.texto)}</div>`:''}</div>
+      ${precisaCaso(p)?`<div class="md-row-next" style="color:var(--red);font-weight:600">Contratou: falta abrir o caso</div>`:p.stage==='contratou'?(casoVinculado(p)?`<div class="md-row-next" style="color:var(--grn);font-weight:600">Caso: ${esc(casoVinculado(p).client)}</div>`:`<div class="md-row-next" style="color:var(--ora);font-weight:600">Sem caso vinculado: abra a ficha para vincular ou abrir</div>`):nt?`<div class="md-row-next">${esc(nt.texto)}</div>`:''}</div>
     ${nt?`<div class="md-row-r"><span class="md-row-days ${d<0?'dd-over':d<=7?'dd-urg':'dd-ok'}">${relDias(d)}</span><span class="md-row-date">${fDiaSem(nt.data)}</span></div>`
       :fu!==null?`<div class="md-row-r"><span class="md-row-days ${fu<=0?'dd-over':'dd-ok'}">follow-up</span><span class="md-row-date">${fDiaSem(p.followupDate)}</span></div>`:''}
   </div>`;

@@ -1,9 +1,16 @@
 import json, os, urllib.request, collections
 KEY=os.environ.get("DATAJUD_API_KEY","")
 URL="https://api-publica.datajud.cnj.jus.br/api_publica_stj/_search"
+import time, urllib.error
 def q(body):
-    req=urllib.request.Request(URL,data=json.dumps(body).encode(),headers={"Content-Type":"application/json","Authorization":"APIKey "+KEY},method="POST")
-    with urllib.request.urlopen(req,timeout=120) as r: return json.loads(r.read())
+    for t in range(6):
+        req=urllib.request.Request(URL,data=json.dumps(body).encode(),headers={"Content-Type":"application/json","Authorization":"APIKey "+KEY},method="POST")
+        try:
+            with urllib.request.urlopen(req,timeout=120) as r: return json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            if e.code==429: time.sleep(20*(t+1)); continue
+            print("HTTP",e.code,e.read()[:300]); raise
+    raise SystemExit("429 persistente")
 G="GABINETE DA MINISTRA NANCY ANDRIGHI"
 print("== amostras Nancy, distribuidos recentes ==")
 r=q({"size":3,"query":{"bool":{"must":[{"term":{"orgaoJulgador.nome.keyword":G}}]}},"sort":[{"dataAjuizamento":{"order":"desc"}}]})

@@ -75,6 +75,7 @@ const fD=d=>d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';
 const cnj=n=>n&&n.length===20?n.slice(0,7)+'-'+n.slice(7,9)+'.'+n.slice(9,13)+'.'+n.slice(13,14)+'.'+n.slice(14,16)+'.'+n.slice(16):n;
 const sigla=c=>({'Agravo em Recurso Especial':'AREsp','Recurso Especial':'REsp','Conflito de Competência':'CC','Embargos de Divergência em Recurso Especial':'EREsp','Embargos de Divergência em Agravo em Recurso Especial':'EAREsp','Reclamação':'Rcl','Ação Rescisória':'AR','Tutela Cautelar Antecedente':'TutCautAnt','Tutela Antecipada Antecedente':'TutAntAnt','Mandado de Segurança':'MS','Recurso Ordinário em Mandado de Segurança':'RMS','Petição':'Pet'}[c]||c);
 $('sub').textContent='Atualizado em '+(M.atualizado||'?')+' · '+R.length+' processos';
+if((M.falhas||[]).length){const av=document.querySelector('.aviso');av.insertAdjacentHTML('afterend',`<div class="aviso" style="color:#b45309">Na última coleta a base do CNJ não respondeu para: ${M.falhas.join('; ')}. Esses trechos usam a coleta anterior ou estão incompletos até a próxima rodada.</div>`);}
 function conta(f){const m={};R.forEach(r=>{const k=f(r);m[k]=(m[k]||0)+1});return Object.entries(m).sort((a,b)=>b[1]-a[1]);}
 function opts(id,rot,pares,ordenar){const s=$(id);const l=ordenar?pares.slice().sort((a,b)=>a[0].localeCompare(b[0],'pt-BR')):pares;s.innerHTML=`<option value="">${rot}</option>`+l.map(([k,n])=>`<option value="${k.replace(/"/g,'&quot;')}">${k} (${n})</option>`).join('');}
 opts('f-orgao','Todos os órgãos',conta(r=>r.orgao));
@@ -103,7 +104,7 @@ function desenhar(){
   $('cnt').textContent=l.length+' processo'+(l.length!==1?'s':'');
   $('th').innerHTML=COLS.map(([k,t])=>`<th class="${ord.k===k?'on':''} col-${k}" onclick="ordenar('${k}')">${t}${ord.k===k?(ord.d<0?' ▼':' ▲'):''}</th>`).join('');
   $('tb').innerHTML=vis.map(r=>`<tr>
-    <td class="num"><a href="https://consulta-processo.web.stj.jus.br/consulta" target="_blank" title="Abrir a consulta processual do STJ (cole o número em Número Origem)">${cnj(r.num)}</a><button class="copiar" onclick="copiar('${r.num}',this)">copiar</button></td>
+    <td class="num"><a href="https://consulta-processo.web.stj.jus.br/resultados?nu=${r.num}" target="_blank" title="Abrir o processo na consulta do STJ">${cnj(r.num)}</a><button class="copiar" onclick="copiar('${r.num}',this)">copiar</button></td>
     <td><b>${sigla(r.classe)}</b></td>
     <td><span class="pill ${r.orgao==='3ª Turma'?'o3':r.orgao==='4ª Turma'?'o4':'os'}">${r.orgao}</span></td>
     <td>${r.min}</td>

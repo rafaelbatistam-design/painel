@@ -31,6 +31,7 @@ jobs:
           git add stj/
           if git diff --staged --quiet; then echo "Sem mudanças."; else
             git commit -m "Monitor STJ: atualização $(date +'%d/%m/%Y %H:%M')"
+            git pull --rebase origin main
             git push
             gh workflow run publicar.yml --ref main
           fi

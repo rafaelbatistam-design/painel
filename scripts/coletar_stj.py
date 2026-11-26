@@ -106,7 +106,7 @@ def post_api(body):
     if not API_KEY:
         log("ERRO: chave do DataJud ausente."); sys.exit(1)
     payload = json.dumps(body).encode("utf-8")
-    for tentativa in range(7):
+    for tentativa in range(5):
         req = urllib.request.Request(API_URL, data=payload, method="POST",
               headers={"Content-Type": "application/json", "Authorization": f"APIKey {API_KEY}"})
         try:
@@ -114,7 +114,7 @@ def post_api(body):
                 return json.loads(r.read())
         except urllib.error.HTTPError as e:
             if e.code in (429, 502, 503, 504):
-                espera = 30 * (tentativa + 1); log(f"  HTTP {e.code}, nova tentativa em {espera}s"); time.sleep(espera); continue
+                espera = 25 * (tentativa + 1); log(f"  HTTP {e.code}, nova tentativa em {espera}s"); time.sleep(espera); continue
             log(f"  HTTP {e.code}: {e.read().decode(errors='ignore')[:200]}"); return None
         except Exception as e:
             espera = 15 * (tentativa + 1); log(f"  Erro {e}, nova tentativa em {espera}s"); time.sleep(espera)
@@ -157,54 +157,103 @@ def situacao(movs):
     if pauta: return "Em pauta", pauta[:10]
     return "Aguardando julgamento", ""
 
-def coletar():
+def meses_janela():
+    """Janelas mensais (início, fim) cobrindo os últimos MESES meses, da mais recente para a mais antiga."""
+    hoje = date.today().replace(day=1)
+    jan = []
+    for k in range(MESES + 1):
+        y, m = hoje.year, hoje.month - k
+        while m <= 0: m += 12; y -= 1
+        ini = date(y, m, 1)
+        fim = date(y + (m == 12), (m % 12) + 1, 1)
+        jan.append((ini.isoformat(), fim.isoformat()))
+    return jan
+
+def coletar_janela(nome, turma, chaves, ini, fim, desde):
+    """Coleta um gabinete num mês de autuação. Devolve (linhas, ok)."""
+    must = [{"terms": {"orgaoJulgador.nome.keyword": chaves}},
+            {"range": {"dataAjuizamento": {"gte": ini, "lt": fim}}}]
+    must_not = [{"terms": {"movimentos.nome.keyword": FIM + DECISOES}},
+                {"terms": {"classe.nome.keyword": sorted(CLASSES_FORA)}}]
+    linhas, after = [], None
+    while True:
+        body = {"size": 200, "query": {"bool": {"must": must, "must_not": must_not}},
+                "_source": ["numeroProcesso", "classe.nome", "assuntos.nome", "movimentos.nome", "movimentos.dataHora", "dataAjuizamento"],
+                "sort": [{"@timestamp": {"order": "asc"}}]}
+        if after: body["search_after"] = after
+        dados = post_api(body)
+        if dados is None: return linhas, False
+        hits = dados.get("hits", {}).get("hits", [])
+        for h in hits:
+            s = h.get("_source", {})
+            num = s.get("numeroProcesso", "")
+            if not num: continue
+            classe = (s.get("classe") or {}).get("nome", "")
+            assuntos = [a.get("nome", "").strip() for a in (s.get("assuntos") or []) if isinstance(a, dict) and a.get("nome")]
+            if fora_da_atuacao(assuntos): continue
+            movs = s.get("movimentos") or []
+            distrib = [m.get("dataHora", "") for m in movs if (m.get("nome") or "") in ("Distribuição", "Redistribuição", "Redistribuição por prevenção")]
+            chegada = (min(distrib) if distrib else (s.get("dataAjuizamento") or ""))[:10]
+            if chegada and chegada < desde: continue
+            ult = max(movs, key=lambda m: m.get("dataHora", "")) if movs else {}
+            sit, data_pauta = situacao(movs)
+            orgao = "2ª Seção" if classe in CLASSES_SECAO else turma
+            linhas.append([num, classe, orgao, nome, area_de(assuntos), assuntos, chegada, sit, data_pauta,
+                           (ult.get("nome") or "").strip(), (ult.get("dataHora") or "")[:10]])
+        if len(hits) < 200: return linhas, True
+        after = hits[-1].get("sort")
+        time.sleep(4.0)
+
+def coletar(cache):
     desde = (date.today() - timedelta(days=int(MESES * 30.5))).isoformat()
     log("=== Gabinetes ===")
     gabs = nomes_gabinetes()
-    procs, vistos = [], set()
+    if not gabs:
+        log("Base sem resposta para a lista de gabinetes."); return [], {"falhas": ["lista de gabinetes"]}
+    pendentes, novo_cache, falhas = [], {}, []
     for nome, (turma, chaves) in gabs.items():
-        must = [{"terms": {"orgaoJulgador.nome.keyword": chaves}},
-                {"range": {"movimentos.dataHora": {"gte": desde}}}]
-        must_not = [{"terms": {"movimentos.nome.keyword": FIM + DECISOES}},
-                    {"terms": {"classe.nome.keyword": sorted(CLASSES_FORA)}}]
-        after, total = None, 0
-        while True:
-            body = {"size": 200, "query": {"bool": {"must": must, "must_not": must_not}},
-                    "_source": ["numeroProcesso", "classe.nome", "assuntos.nome", "movimentos.nome", "movimentos.dataHora", "dataAjuizamento"],
-                    "sort": [{"@timestamp": {"order": "asc"}}]}
-            if after: body["search_after"] = after
-            dados = post_api(body)
-            if not dados: break
-            hits = dados.get("hits", {}).get("hits", [])
-            for h in hits:
-                s = h.get("_source", {})
-                num = s.get("numeroProcesso", "")
-                if not num or num in vistos: continue
-                classe = (s.get("classe") or {}).get("nome", "")
-                assuntos = [a.get("nome", "").strip() for a in (s.get("assuntos") or []) if isinstance(a, dict) and a.get("nome")]
-                if fora_da_atuacao(assuntos): continue
-                movs = s.get("movimentos") or []
-                datas = sorted(m.get("dataHora", "") for m in movs if m.get("dataHora"))
-                distrib = [m.get("dataHora", "") for m in movs if (m.get("nome") or "") in ("Distribuição", "Redistribuição", "Redistribuição por prevenção")]
-                chegada = (min(distrib) if distrib else (datas[0] if datas else ""))[:10]
-                if chegada and chegada < desde: continue
-                ult = max(movs, key=lambda m: m.get("dataHora", "")) if movs else {}
-                sit, data_pauta = situacao(movs)
-                orgao = "2ª Seção" if classe in CLASSES_SECAO else turma
-                vistos.add(num)
-                procs.append([num, classe, orgao, nome, area_de(assuntos), assuntos, chegada, sit, data_pauta,
-                              (ult.get("nome") or "").strip(), (ult.get("dataHora") or "")[:10]])
-                total += 1
-            if len(hits) < 200: break
-            after = hits[-1].get("sort")
-            time.sleep(4.0)
-        log(f"  {nome}: {total} processos")
-        time.sleep(5.0)
+        for ini, fim in meses_janela():
+            pendentes.append((nome, turma, chaves, ini, fim))
+    for rodada in (1, 2):
+        proximas = []
+        for (nome, turma, chaves, ini, fim) in pendentes:
+            chave = nome + "|" + ini[:7]
+            linhas, ok = coletar_janela(nome, turma, chaves, ini, fim, desde)
+            if ok:
+                novo_cache[chave] = {"quando": date.today().isoformat(), "linhas": linhas}
+                log(f"  {nome} {ini[:7]}: {len(linhas)}")
+            else:
+                proximas.append((nome, turma, chaves, ini, fim))
+                log(f"  {nome} {ini[:7]}: falhou (rodada {rodada})")
+            time.sleep(3.0)
+        pendentes = proximas
+        if not pendentes: break
+        log(f"=== {len(pendentes)} janelas para tentar de novo ===")
+        time.sleep(60)
+    for (nome, turma, chaves, ini, fim) in pendentes:
+        chave = nome + "|" + ini[:7]
+        if chave in cache:
+            novo_cache[chave] = cache[chave]
+            falhas.append(f"{nome} ({ini[5:7]}/{ini[:4]}): dados da coleta de {cache[chave]['quando']}")
+        else:
+            falhas.append(f"{nome} ({ini[5:7]}/{ini[:4]}): sem dados")
+    procs, vistos = [], set()
+    for chave, v in novo_cache.items():
+        for l in v["linhas"]:
+            if l[0] in vistos: continue
+            vistos.add(l[0]); procs.append(l)
     procs.sort(key=lambda p: p[6], reverse=True)
-    return procs
+    porm = {}
+    for p in procs: porm[p[3]] = porm.get(p[3], 0) + 1
+    log("=== Por ministro ===")
+    for k, v in sorted(porm.items()): log(f"  {k}: {v}")
+    return procs, {"falhas": falhas, "cache": novo_cache}
 
 def main():
-    procs = coletar()
+    base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "stj")
+    try: cache = json.load(open(os.path.join(base, "cache.json"), encoding="utf-8"))
+    except Exception: cache = {}
+    procs, info = coletar(cache)
     if not procs:
         log("Nenhum processo coletado; mantendo a página anterior."); sys.exit(1)
     # tabela de assuntos para deixar o arquivo leve
@@ -212,7 +261,9 @@ def main():
     idx = {a: i for i, a in enumerate(tab)}
     linhas = [[p[0], p[1], p[2], p[3], p[4], [idx[a] for a in p[5]], p[6], p[7], p[8], p[9], p[10]] for p in procs]
     agora = datetime.utcnow() - timedelta(hours=3)
-    meta = {"atualizado": agora.strftime("%d/%m/%Y %H:%M"), "meses": MESES, "total": len(linhas)}
+    meta = {"atualizado": agora.strftime("%d/%m/%Y %H:%M"), "meses": MESES, "total": len(linhas), "falhas": info.get("falhas", [])}
+    with open(os.path.join(base, "cache.json"), "w", encoding="utf-8") as f:
+        json.dump(info.get("cache", {}), f, ensure_ascii=False, separators=(",", ":"))
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "stj")
     os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "data.js"), "w", encoding="utf-8") as f:

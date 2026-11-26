@@ -491,6 +491,7 @@ details.next7[open]>summary{border-bottom:1px solid var(--line);}
 .pv-link:hover{color:var(--blu);text-decoration:underline;}
 .task-click{cursor:pointer;}
 .task-click:hover{color:var(--blu);}
+.dica{font-size:11.5px;color:var(--muted);background:#fff;border:1px dashed var(--line2);border-radius:8px;padding:7px 12px;margin-bottom:12px;}
 </style>
 </head>
 <body>
@@ -1859,7 +1860,7 @@ function ativosC(){return S.casos.filter(c=>c.status!=='encerrado');}
 function ativosP(){return S.prospeccao.filter(p=>!['contratou','nao_contratou'].includes(p.stage));}
 function provItems(){
   const out=[];
-  const push=(x,isP)=>pendTasks(x).forEach(t=>{if(!isJud(t.tipo)||t.tipo==='prazo')out.push({c:x,t,isP,d:t.data?daysTo(t.data):null});});
+  const push=(x,isP)=>pendTasks(x).forEach(t=>out.push({c:x,t,isP,d:t.data?daysTo(t.data):null}));
   ativosC().forEach(c=>push(c,false));ativosP().forEach(p=>push(p,true));
   return out;
 }
@@ -1902,7 +1903,10 @@ function render(){
   }).join('')+`<div class="nav-sep"></div>`+PJE.map(l=>`<a class="nav-sub" style="padding-left:12px" href="${l.url}" target="_blank">PJe ${l.label} ↗</a>`).join('')+`<a class="nav-sub" style="padding-left:12px" href="stj/" target="_blank">Monitor STJ ↗</a>`;
   const builders={dashboard:bDash,prov:bProv,casos:bCasos,honorarios:bHon,prospeccao:bProsp,contabil:bCont};
   const band=TESTE?`<div class="teste-band">Modo teste: você está vendo os seus dados reais, mas nada do que fizer aqui é gravado. Ao recarregar a página, tudo volta ao que está na planilha.</div>`:'';
-  document.getElementById('tab-body').innerHTML=band+(builders[S.tab]||bDash)();
+  const dica=S.tab==='prov'&&S.provView==='quadro'?'Arrastar muda o andamento de cada providência ou ato. A coluna Concluídas dá baixa; arrastar de volta reabre.'
+    :S.tab==='casos'&&S.casosView==='kanban'?'Arrastar muda o status do caso. "Em pauta" é automático quando há julgamento lançado.'
+    :S.tab==='prospeccao'&&S.prospView==='kanban'?'Arrastar muda a etapa da prospecção e cria a providência correspondente.':'';
+  document.getElementById('tab-body').innerHTML=band+(dica?`<div class="dica">${dica}</div>`:'')+(builders[S.tab]||bDash)();
   if(S.tab==='casos'&&S.casosView==='kanban')wireKanban('caso');
   if(S.tab==='prospeccao'&&S.prospView==='kanban')wireKanban('prosp');
   if(S.tab==='prov'&&S.provView==='quadro')wireProvBoard();
@@ -2041,8 +2045,8 @@ function bProv(){
   let items=provItems();
   if(S.provSearch){const q=S.provSearch.toLowerCase();items=items.filter(o=>o.t.texto.toLowerCase().includes(q)||itemName(o.c).toLowerCase().includes(q));}
   const all=items.length;
-  if(f==='hoje')items=items.filter(isHoje);else if(f==='data')items=items.filter(o=>o.d!==null);else if(f==='semdata')items=items.filter(o=>o.d===null);
-  const F=[['todas','Todas'],['hoje','★ Hoje e atrasadas'],['data','Com data'],['semdata','Sem data']];
+  if(f==='hoje')items=items.filter(isHoje);else if(f==='judicial')items=items.filter(o=>isJud(o.t.tipo));else if(f==='data')items=items.filter(o=>o.d!==null);else if(f==='semdata')items=items.filter(o=>o.d===null);
+  const F=[['todas','Todas'],['hoje','★ Hoje e atrasadas'],['judicial','⚖ Atos judiciais'],['data','Com data'],['semdata','Sem data']];
   const bar=`<div class="top-bar">
     <div class="filters">${F.map(([id,l])=>`<button class="fbtn${f===id?' on':''}" onclick="S.provFilter='${id}';render()">${l}</button>`).join('')}</div>
     <div style="display:flex;gap:8px;align-items:center">
@@ -2096,9 +2100,9 @@ function quickAdd(cid,txt){
 const ETAPAS=[['fazer','A fazer','var(--muted)'],['andamento','Em andamento','var(--blu)'],['aguardando','Aguardando terceiro','var(--ora)']];
 function etapaOf(t){return t.etapa||(t.tipo==='followup'?'aguardando':'fazer');}
 const ETAPA_CHIP={andamento:['▶ Em andamento','var(--blu)','var(--blu-bg)','var(--blu-b)'],aguardando:['⏳ Aguardando terceiro','var(--ora)','var(--ora-bg)','var(--ora-b)']};
-function chipEtapa(t){if(t.feito||(isJud(t.tipo)&&t.tipo!=='prazo'))return'';const e=ETAPA_CHIP[etapaOf(t)];if(!e)return'';return`<span class="chip" style="color:${e[1]};background:${e[2]};border-color:${e[3]}">${e[0]}</span>`;}
+function chipEtapa(t){if(t.feito)return'';const e=ETAPA_CHIP[etapaOf(t)];if(!e)return'';return`<span class="chip" style="color:${e[1]};background:${e[2]};border-color:${e[3]}">${e[0]}</span>`;}
 function feitasRecentes(){
-  const out=[];const push=(x,isP)=>(x.tarefas||[]).forEach(t=>{if(t.feito&&!isJud(t.tipo)&&t.dataFeito&&daysSince(t.dataFeito)<=7)out.push({c:x,t,isP,d:null});});
+  const out=[];const push=(x,isP)=>(x.tarefas||[]).forEach(t=>{if(t.feito&&t.dataFeito&&daysSince(t.dataFeito)<=7)out.push({c:x,t,isP,d:null});});
   ativosC().forEach(c=>push(c,false));ativosP().forEach(p=>push(p,true));
   return out.sort((a,b)=>(b.t.dataFeito||'').localeCompare(a.t.dataFeito||''));
 }
@@ -2193,7 +2197,7 @@ function taskEditRow(c,t){
       <span style="display:flex;flex-direction:column;gap:2px"><span id="et-data-lbl-${t.id}" style="font-size:9px;color:var(--faint)">${l1}</span><input type="date" id="et-data-${t.id}" value="${t.data||''}" style="width:128px;${inp}"></span>
       <span id="et-x-wrap-${t.id}" style="display:${tem?'flex':'none'};flex-direction:column;gap:2px"><span id="et-x-lbl-${t.id}" style="font-size:9px;color:var(--faint)">${l2}</span><input type="date" id="et-x-${t.id}" value="${xval}" style="width:128px;${inp}"></span>
       <span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:9px;color:var(--faint)">hora</span><input type="time" id="et-hora-${t.id}" value="${t.hora||''}" style="width:96px;${inp}"></span>
-      ${meta.jud&&t.tipo!=='prazo'?'':`<span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:9px;color:var(--faint)">andamento</span><select id="et-etapa-${t.id}" style="${inp}">${ETAPAS.map(([id,l])=>`<option value="${id}" ${etapaOf(t)===id?'selected':''}>${l}</option>`).join('')}</select></span>`}
+      ${false?'':`<span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:9px;color:var(--faint)">andamento</span><select id="et-etapa-${t.id}" style="${inp}">${ETAPAS.map(([id,l])=>`<option value="${id}" ${etapaOf(t)===id?'selected':''}>${l}</option>`).join('')}</select></span>`}
       <button class="btn btn-pri btn-sm" onclick="saveTaskEdit('${c.id}','${t.id}')">Salvar</button>
       <button class="btn btn-ghost btn-sm" onclick="cancelTaskEdit()">Cancelar</button>
     </div>

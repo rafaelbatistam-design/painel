@@ -10,6 +10,8 @@ from datetime import datetime, date, timedelta
 API_KEY = os.environ.get("DATAJUD_API_KEY", "")
 API_URL = "https://api-publica.datajud.cnj.jus.br/api_publica_stj/_search"
 MESES = 12
+# semanal: só as novidades; completo: revisão de toda a janela de 12 meses (1ª segunda do mês)
+MODO = os.environ.get("MODO", "semanal").strip().lower()
 
 # Composição atual (guias do STJ: 3ª Turma, ago/2026; 4ª Turma, set/2026).
 # Cada entrada: nome exibido, turma, trecho que identifica o gabinete na base do CNJ.
@@ -211,9 +213,17 @@ def coletar(cache):
     if not gabs:
         log("Base sem resposta para a lista de gabinetes."); return [], {"falhas": ["lista de gabinetes"]}
     pendentes, novo_cache, falhas = [], {}, []
+    janelas = meses_janela()
+    # semanal: só os dois meses mais recentes (cobrem as últimas 5 semanas); o resto vem do cache
+    recoletar = janelas[:2] if MODO == "semanal" else janelas
     for nome, (turma, chaves) in gabs.items():
-        for ini, fim in meses_janela():
-            pendentes.append((nome, turma, chaves, ini, fim))
+        for ini, fim in janelas:
+            chave = nome + "|" + ini[:7]
+            if (ini, fim) in recoletar or chave not in cache:
+                pendentes.append((nome, turma, chaves, ini, fim))
+            else:
+                novo_cache[chave] = cache[chave]
+    log(f"=== Modo {MODO}: {len(pendentes)} janelas a consultar ===")
     for rodada in (1, 2):
         proximas = []
         for (nome, turma, chaves, ini, fim) in pendentes:
@@ -251,29 +261,45 @@ def coletar(cache):
 
 def main():
     base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "stj")
+    global MODO
     try: cache = json.load(open(os.path.join(base, "cache.json"), encoding="utf-8"))
     except Exception: cache = {}
+    if not cache: MODO = "completo"
+    try: vistos = json.load(open(os.path.join(base, "vistos.json"), encoding="utf-8"))
+    except Exception: vistos = None
     procs, info = coletar(cache)
     if not procs:
         log("Nenhum processo coletado; mantendo a página anterior."); sys.exit(1)
     # tabela de assuntos para deixar o arquivo leve
     tab = sorted({a for p in procs for a in p[5]})
     idx = {a: i for i, a in enumerate(tab)}
-    linhas = [[p[0], p[1], p[2], p[3], p[4], [idx[a] for a in p[5]], p[6], p[7], p[8], p[9], p[10]] for p in procs]
+    # data em que o processo apareceu pela primeira vez no monitor ("" = base inicial)
+    hoje = date.today().isoformat()
+    if vistos is None: vistos = {p[0]: "" for p in procs}
+    for p in procs: vistos.setdefault(p[0], hoje)
+    vistos = {p[0]: vistos[p[0]] for p in procs}
+    novos = sum(1 for p in procs if vistos[p[0]] == hoje)
+    linhas = [[p[0], p[1], p[2], p[3], p[4], [idx[a] for a in p[5]], p[6], p[7], p[8], p[9], p[10], vistos[p[0]]] for p in procs]
+    try: ocultar = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "stj_ocultar.json"), encoding="utf-8"))
+    except Exception: ocultar = {"assuntos": [], "genericos": []}
     agora = datetime.utcnow() - timedelta(hours=3)
-    meta = {"atualizado": agora.strftime("%d/%m/%Y %H:%M"), "meses": MESES, "total": len(linhas), "falhas": info.get("falhas", [])}
+    meta = {"atualizado": agora.strftime("%d/%m/%Y %H:%M"), "meses": MESES, "total": len(linhas), "falhas": info.get("falhas", []),
+            "modo": MODO, "novos": novos, "hoje": hoje}
     with open(os.path.join(base, "cache.json"), "w", encoding="utf-8") as f:
         json.dump(info.get("cache", {}), f, ensure_ascii=False, separators=(",", ":"))
+    with open(os.path.join(base, "vistos.json"), "w", encoding="utf-8") as f:
+        json.dump(vistos, f, ensure_ascii=False, separators=(",", ":"))
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "stj")
     os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "data.js"), "w", encoding="utf-8") as f:
         f.write("window.STJ_META=" + json.dumps(meta, ensure_ascii=False) + ";\n")
         f.write("window.STJ_ASSUNTOS=" + json.dumps(tab, ensure_ascii=False) + ";\n")
+        f.write("window.STJ_OCULTAR=" + json.dumps(ocultar, ensure_ascii=False) + ";\n")
         f.write("window.STJ_DADOS=" + json.dumps(linhas, ensure_ascii=False, separators=(",", ":")) + ";\n")
     tpl = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "stj_pagina.html"), encoding="utf-8").read()
     with open(os.path.join(out, "index.html"), "w", encoding="utf-8") as f:
         f.write(tpl.replace("__VERSAO__", agora.strftime("%Y%m%d%H%M")))
-    log(f"Gravado: {len(linhas)} processos, {len(tab)} assuntos")
+    log(f"Gravado: {len(linhas)} processos ({novos} novos), {len(tab)} assuntos, modo {MODO}")
 
 if __name__ == "__main__":
     main()

@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: '0 10 * * 1'
   workflow_dispatch:
+    inputs:
+      modo:
+        description: 'semanal (só novidades) ou completo (revisão de 12 meses)'
+        default: 'semanal'
 permissions:
   contents: write
   actions: write
@@ -21,7 +25,14 @@ jobs:
           # chave pública do DataJud, divulgada pelo CNJ para todos os usuários
           # (https://datajud-wiki.cnj.jus.br/api-publica/acesso). Se houver segredo próprio, ele tem preferência.
           DATAJUD_API_KEY: ${{ secrets.DATAJUD_API_KEY || 'cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw==' }}
-        run: python scripts/coletar_stj.py
+        run: |
+          # revisão completa na primeira segunda-feira do mês; nas demais, só as novidades
+          MODO="${{ github.event.inputs.modo }}"
+          if [ -z "$MODO" ]; then
+            if [ "$(date +%d)" -le 7 ]; then MODO=completo; else MODO=semanal; fi
+          fi
+          export MODO
+          python scripts/coletar_stj.py
       - name: Gravar e republicar
         env:
           GH_TOKEN: ${{ github.token }}

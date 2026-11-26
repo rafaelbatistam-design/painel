@@ -46,6 +46,9 @@ tr:hover td{background:#fbfaf7}
 .and{font-size:11px;color:var(--muted)}
 .mais{display:block;margin:14px auto 0;padding:9px 18px;border:1px solid var(--line2);background:#fff;border-radius:8px;font-family:inherit;font-size:12.5px;cursor:pointer}
 .aviso{font-size:11.5px;color:var(--muted);padding:0 28px 10px}
+.s-novo{background:var(--grn-bg);color:var(--grn);margin-left:6px}.s-oc{background:var(--paper2);color:var(--faint);margin-left:6px}
+.card.novo .v{color:var(--grn)}
+.oc-lab{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap}
 .vazio{padding:40px;text-align:center;color:var(--muted)}
 @media(max-width:800px){header,.cards,.filtros,.wrap,.aviso{padding-left:12px;padding-right:12px}.col-and,.col-ass{display:none}}
 </style>
@@ -60,6 +63,7 @@ tr:hover td{background:#fbfaf7}
 <div class="filtros">
   <input type="search" id="q" placeholder="Buscar tema, assunto, classe ou número…">
   <select id="f-orgao"></select><select id="f-min"></select><select id="f-area"></select><select id="f-ass"></select><select id="f-classe"></select><select id="f-sit"></select><select id="f-per"></select>
+  <label class="oc-lab" id="oc-lab"><input type="checkbox" id="f-oc"> mostrar temas ocultos</label>
   <button class="limpar" onclick="limpar()">limpar filtros</button>
   <span class="cnt" id="cnt"></span>
 </div>
@@ -67,14 +71,19 @@ tr:hover td{background:#fbfaf7}
 <script src="data.js?v=__VERSAO__"></script>
 <script>
 (function(){
-const M=window.STJ_META||{},A=window.STJ_ASSUNTOS||[],R=(window.STJ_DADOS||[]).map(r=>({num:r[0],classe:r[1],orgao:r[2],min:r[3],area:r[4],ass:r[5].map(i=>A[i]),cheg:r[6],sit:r[7],pauta:r[8],ult:r[9],dult:r[10]}));
-const PAG=150;let pag=1,ord={k:'cheg',d:-1};
+const M=window.STJ_META||{},A=window.STJ_ASSUNTOS||[],R=(window.STJ_DADOS||[]).map(r=>({num:r[0],classe:r[1],orgao:r[2],min:r[3],area:r[4],ass:r[5].map(i=>A[i]),cheg:r[6],sit:r[7],pauta:r[8],ult:r[9],dult:r[10],visto:r[11]||''}));
+const OC=window.STJ_OCULTAR||{},OCA=new Set(OC.assuntos||[]),OCG=new Set(OC.genericos||[]);
+R.forEach(r=>{r.oculto=OCA.size>0&&r.ass.some(a=>OCA.has(a))&&r.ass.every(a=>OCA.has(a)||OCG.has(a));});
+const NOVO_DESDE=new Date(Date.now()-7*864e5).toISOString().slice(0,10);
+R.forEach(r=>{r.novo=!!r.visto&&r.visto>=NOVO_DESDE;});
+const nOcultos=R.filter(r=>r.oculto).length;
+const PAG=150;let pag=1,ord={k:'cheg',d:-1},soNovos=false;
 const $=id=>document.getElementById(id);
 const sa=s=>(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 const fD=d=>d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';
 const cnj=n=>n&&n.length===20?n.slice(0,7)+'-'+n.slice(7,9)+'.'+n.slice(9,13)+'.'+n.slice(13,14)+'.'+n.slice(14,16)+'.'+n.slice(16):n;
 const sigla=c=>({'Agravo em Recurso Especial':'AREsp','Recurso Especial':'REsp','Conflito de Competência':'CC','Embargos de Divergência em Recurso Especial':'EREsp','Embargos de Divergência em Agravo em Recurso Especial':'EAREsp','Reclamação':'Rcl','Ação Rescisória':'AR','Tutela Cautelar Antecedente':'TutCautAnt','Tutela Antecipada Antecedente':'TutAntAnt','Mandado de Segurança':'MS','Recurso Ordinário em Mandado de Segurança':'RMS','Petição':'Pet'}[c]||c);
-$('sub').textContent='Atualizado em '+(M.atualizado||'?')+' · '+R.length+' processos';
+$('sub').textContent='Atualizado em '+(M.atualizado||'?')+(M.modo==='completo'?' (revisão completa)':M.modo==='semanal'?' (novidades da semana)':'')+' · '+R.filter(r=>!r.oculto).length+' processos'+(nOcultos?' · '+nOcultos+' em temas ocultos':'');
 if((M.falhas||[]).length){const av=document.querySelector('.aviso');av.insertAdjacentHTML('afterend',`<div class="aviso" style="color:#b45309">Na última coleta a base do CNJ não respondeu para: ${M.falhas.join('; ')}. Esses trechos usam a coleta anterior ou estão incompletos até a próxima rodada.</div>`);}
 function conta(f){const m={};R.forEach(r=>{const k=f(r);m[k]=(m[k]||0)+1});return Object.entries(m).sort((a,b)=>b[1]-a[1]);}
 function opts(id,rot,pares,ordenar){const s=$(id);const l=ordenar?pares.slice().sort((a,b)=>a[0].localeCompare(b[0],'pt-BR')):pares;s.innerHTML=`<option value="">${rot}</option>`+l.map(([k,n])=>`<option value="${k.replace(/"/g,'&quot;')}">${k} (${n})</option>`).join('');}
@@ -86,25 +95,26 @@ assOpts();
 opts('f-classe','Todas as classes',conta(r=>r.classe));
 opts('f-sit','Todas as situações',conta(r=>r.sit));
 $('f-per').innerHTML='<option value="">Chegada: 12 meses</option><option value="30">últimos 30 dias</option><option value="90">últimos 3 meses</option><option value="180">últimos 6 meses</option>';
-const cards=[['Total',()=>true],['3ª Turma',r=>r.orgao==='3ª Turma'],['4ª Turma',r=>r.orgao==='4ª Turma'],['2ª Seção',r=>r.orgao==='2ª Seção'],['Em pauta',r=>r.sit==='Em pauta']];
-$('cards').innerHTML=cards.map(([l,f],i)=>`<div class="card" data-i="${i}" onclick="cardClick(${i})"><div class="k">${l}</div><div class="v">${R.filter(f).length}</div></div>`).join('');
-window.cardClick=i=>{limpar(true);if(i===1||i===2||i===3)$('f-orgao').value=cards[i][0];if(i===4)$('f-sit').value='Em pauta';pag=1;desenhar();};
+const cards=[['Novos esta semana',r=>r.novo],['Total',()=>true],['3ª Turma',r=>r.orgao==='3ª Turma'],['4ª Turma',r=>r.orgao==='4ª Turma'],['2ª Seção',r=>r.orgao==='2ª Seção'],['Em pauta',r=>r.sit==='Em pauta']];
+function desenharCards(){const base=R.filter(r=>$('f-oc').checked||!r.oculto);$('cards').innerHTML=cards.map(([l,f],i)=>`<div class="card${i===0?' novo':''}${(i===0&&soNovos)?' on':''}" onclick="cardClick(${i})"><div class="k">${l}</div><div class="v">${base.filter(f).length}</div></div>`).join('');}
+window.cardClick=i=>{limpar(true);soNovos=i===0;if(i>=2&&i<=4)$('f-orgao').value=cards[i][0];if(i===5)$('f-sit').value='Em pauta';pag=1;desenhar();};
 const COLS=[['num','Processo'],['classe','Classe'],['orgao','Órgão'],['min','Relator'],['area','Área'],['ass','Assuntos'],['cheg','Chegada ao STJ'],['sit','Situação'],['ult','Último andamento']];
 function filtrados(){
   const q=sa($('q').value).trim(),o=$('f-orgao').value,mi=$('f-min').value,ar=$('f-area').value,as=$('f-ass').value,cl=$('f-classe').value,si=$('f-sit').value,pe=+$('f-per').value||0;
   const lim=pe?new Date(Date.now()-pe*864e5).toISOString().slice(0,10):'';
   const termos=q?q.split(/\s+/):[];
-  let l=R.filter(r=>(!o||r.orgao===o)&&(!mi||r.min===mi)&&(!ar||r.area===ar)&&(!as||r.ass.includes(as))&&(!cl||r.classe===cl)&&(!si||r.sit===si)&&(!lim||r.cheg>=lim)
+  const oc=$('f-oc').checked;
+  let l=R.filter(r=>(oc||!r.oculto)&&(!soNovos||r.novo)&&(!o||r.orgao===o)&&(!mi||r.min===mi)&&(!ar||r.area===ar)&&(!as||r.ass.includes(as))&&(!cl||r.classe===cl)&&(!si||r.sit===si)&&(!lim||r.cheg>=lim)
     &&(!termos.length||termos.every(t=>sa(r.num+' '+cnj(r.num)+' '+r.classe+' '+sigla(r.classe)+' '+r.min+' '+r.area+' '+r.ass.join(' ')+' '+r.ult).includes(t))));
   const k=ord.k;l.sort((a,b)=>{const x=k==='ass'?a.ass.join():a[k]||'',y=k==='ass'?b.ass.join():b[k]||'';return x<y?-ord.d:x>y?ord.d:0;});
   return l;
 }
 function desenhar(){
-  const l=filtrados();const vis=l.slice(0,pag*PAG);
+  desenharCards();const l=filtrados();const vis=l.slice(0,pag*PAG);
   $('cnt').textContent=l.length+' processo'+(l.length!==1?'s':'');
   $('th').innerHTML=COLS.map(([k,t])=>`<th class="${ord.k===k?'on':''} col-${k}" onclick="ordenar('${k}')">${t}${ord.k===k?(ord.d<0?' ▼':' ▲'):''}</th>`).join('');
   $('tb').innerHTML=vis.map(r=>`<tr>
-    <td class="num"><a href="https://consulta-processo.web.stj.jus.br/resultados?nu=${r.num}" target="_blank" title="Abrir o processo na consulta do STJ">${cnj(r.num)}</a><button class="copiar" onclick="copiar('${r.num}',this)">copiar</button></td>
+    <td class="num"><a href="https://consulta-processo.web.stj.jus.br/resultados?nu=${r.num}" target="_blank" title="Abrir o processo na consulta do STJ">${cnj(r.num)}</a><button class="copiar" onclick="copiar('${r.num}',this)">copiar</button>${r.novo?'<span class="pill s-novo">novo</span>':''}${r.oculto?'<span class="pill s-oc">tema oculto</span>':''}</td>
     <td><b>${sigla(r.classe)}</b></td>
     <td><span class="pill ${r.orgao==='3ª Turma'?'o3':r.orgao==='4ª Turma'?'o4':'os'}">${r.orgao}</span></td>
     <td>${r.min}</td>
@@ -120,11 +130,12 @@ function desenhar(){
 window.ordenar=k=>{ord.k===k?ord.d*=-1:(ord={k,d:k==='cheg'||k==='dult'?-1:1});desenhar();};
 window.porAssunto=el=>{$('f-ass').value=el.textContent;if(!$('f-ass').value){$('f-area').value='';assOpts();$('f-ass').value=el.textContent;}pag=1;desenhar();window.scrollTo(0,0);};
 window.copiar=(n,b)=>{const t=cnj(n);(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{b.textContent='copiado';setTimeout(()=>b.textContent='copiar',1500)}).catch(()=>prompt('Copie o número:',t));};
-window.limpar=silencioso=>{['q','f-orgao','f-min','f-area','f-ass','f-classe','f-sit','f-per'].forEach(id=>$(id).value='');assOpts();pag=1;if(silencioso!==true)desenhar();};
+window.limpar=silencioso=>{soNovos=false;['q','f-orgao','f-min','f-area','f-ass','f-classe','f-sit','f-per'].forEach(id=>$(id).value='');assOpts();pag=1;if(silencioso!==true)desenhar();};
 let tm;$('q').addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(()=>{pag=1;desenhar()},200)});
-['f-orgao','f-min','f-classe','f-sit','f-per','f-ass'].forEach(id=>$(id).addEventListener('change',()=>{pag=1;desenhar()}));
+['f-orgao','f-min','f-classe','f-sit','f-per','f-ass','f-oc'].forEach(id=>$(id).addEventListener('change',()=>{pag=1;desenhar()}));
 $('f-area').addEventListener('change',()=>{assOpts();pag=1;desenhar()});
 window.maisPag=()=>{pag+=1;desenhar();};
+if(!nOcultos)$('oc-lab').style.display='none';
 desenhar();
 })();
 </script>

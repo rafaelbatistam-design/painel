@@ -1406,8 +1406,8 @@ function prospDetail(p){
     <div class="dt-sec-h"><h4>Estágio no funil</h4></div>
     <select style="width:100%;padding:9px 11px;border:1px solid var(--line2);border-radius:var(--r);font-family:inherit;font-size:13px" onchange="updSP('${p.id}',this.value)">${STAGES.map(s=>`<option value="${s.id}" ${p.stage===s.id?'selected':''}>${s.label}</option>`).join('')}</select>
     <div class="info-grid" style="margin-top:10px">
-      <div class="info-cell"><div class="k">Último contato${since!==null?' · há '+since+'d':''}</div><div class="v" style="display:flex;gap:6px;align-items:center"><input type="date" class="pc-in" value="${p.lastContact||''}" onchange="setProspCampo('${p.id}','lastContact',this.value)"><button class="alink" onclick="setProspCampo('${p.id}','lastContact',hojeISO())">hoje</button></div></div>
-      <div class="info-cell" style="${fuV?'background:var(--red-bg);border-color:var(--red-b)':''}"><div class="k">Follow-up${fuV?' · vencido':''}</div><div class="v" style="display:flex;gap:6px;align-items:center"><input type="date" class="pc-in" value="${p.followupDate||''}" onchange="setProspCampo('${p.id}','followupDate',this.value)"><button class="alink" onclick="setProspCampo('${p.id}','followupDate',maisDias(7))">+7 dias</button>${p.followupDate?`<button class="alink" onclick="setProspCampo('${p.id}','followupDate','')">limpar</button>`:''}</div></div>
+      ${p.lastContact?`<div class="info-cell"><div class="k">Último contato</div><div class="v">${fDate(p.lastContact)}${since!==null?' · há '+since+'d':''}</div></div>`:''}
+      <div style="grid-column:1/-1;font-size:11px;color:var(--muted)">Ao mudar a etapa, o painel cria a providência correspondente (cobrar documentos, examinar, elaborar proposta, cobrar retorno) em Providências e atos, logo abaixo. As datas de cobrança ficam lá.</div>
     </div>
   </div>
   ${tasksSection(p)}
@@ -2210,7 +2210,6 @@ function saveTaskEdit(cid,tid){
   t.tipoLivre=tipo==='outro'?gv('et-livre-'+tid).trim():'';
   const et=gv('et-etapa-'+tid);if(et)t.etapa=et;
   t.dataInicio=tipo==='prazo'?x:'';t.dataFim=tipo==='julg_virt'?x:'';
-  if(isProsp(c)&&tipo==='followup'&&(t.auto==='retorno'||t.auto==='docs'))c.followupDate=t.data||'';
   _editTaskId=null;saveData();render();
 }
 function tasksSection(item){
@@ -2860,6 +2859,49 @@ toggleTask=function(cid,tid,checked){
   const c=findItem(cid);const t=c&&(c.tarefas||[]).find(x=>x.id===tid);
   if(c&&t&&isProsp(c)&&t.tipo==='followup'&&(t.auto==='retorno'||t.auto==='docs')&&checked&&c.followupDate===t.data)c.followupDate='';
   _toggleTaskV1(cid,tid,checked);
+};
+
+// ── prospecção: datas de cobrança vivem só nas providências ──
+// O campo antigo de follow-up vira providência "Cobrar retorno" (nada se perde).
+const _migrateV2=migrate;
+migrate=function(){
+  let ch=_migrateV2();
+  S.prospeccao.forEach(p=>{
+    if(!p.followupDate)return;
+    if(!p.tarefas)p.tarefas=[];
+    const ativa=!['contratou','nao_contratou'].includes(p.stage);
+    const ja=p.tarefas.some(t=>!t.feito&&t.tipo==='followup'&&t.data);
+    if(ativa&&!ja){
+      const auto=p.stage==='aguardando_retorno'?'retorno':p.stage==='aguardando_docs'?'docs':'';
+      p.tarefas.push({id:uid(),texto:p.stage==='aguardando_retorno'?'Cobrar retorno da proposta':p.stage==='aguardando_docs'?'Cobrar documentos':'Follow-up',tipo:'followup',auto,data:p.followupDate,hora:'',dataInicio:'',dataFim:'',feito:false,dataFeito:''});
+    }
+    if(!p.historico)p.historico=[];
+    p.historico.unshift({id:uid(),data:hojeISO(),texto:'Follow-up de '+fDate(p.followupDate)+' passou para as providências'});
+    p.followupDate='';ch=true;
+  });
+  return ch;
+};
+function proxCobranca(p){return pendTasks(p).filter(t=>t.data).sort((a,b)=>a.data.localeCompare(b.data))[0]||null;}
+function kbProspCard(p){
+  const nt=proxCobranca(p);const d=nt?daysTo(nt.data):null;
+  const cor=d!==null&&d<=0?['var(--red)','var(--red-bg)','var(--red-b)']:['var(--ora)','var(--ora-bg)','var(--ora-b)'];
+  return`<div class="kb-card" draggable="true" data-id="${p.id}" onclick="if(!_dragging)selectKbProsp('${p.id}')">
+    <div class="kb-card-name">${esc(p.name)}</div>
+    ${p.subject?`<div class="kb-card-meta">${esc(p.subject)}</div>`:''}
+    ${nt?`<div class="kb-card-jud" title="${esc(nt.texto)}"><span class="jud-stamp" style="color:${cor[0]};background:${cor[1]};border-color:${cor[2]}">${d<0?'atrasado':d===0?'hoje':fDateShort(nt.data)}</span></div>`:''}
+    ${(p.tagIds||[]).length?`<div class="kb-card-tags" onclick="event.stopPropagation()">${(p.tagIds||[]).map(id=>tagPill(id)).join('')}</div>`:''}
+  </div>`;
+}
+// UPDATE "followup: data" passa a ajustar (ou criar) a providência de cobrança
+const _applyPV2=applyP;
+applyP=function(p,field,value){
+  if(field.toLowerCase()==='followup'){
+    const v=parseDate(value);if(!p.tarefas)p.tarefas=[];
+    const t=p.tarefas.find(x=>!x.feito&&x.tipo==='followup'&&(x.auto==='retorno'||x.auto==='docs'))||p.tarefas.find(x=>!x.feito&&x.tipo==='followup');
+    if(t)t.data=v;else p.tarefas.push({id:uid(),texto:p.stage==='aguardando_docs'?'Cobrar documentos':'Cobrar retorno da proposta',tipo:'followup',auto:p.stage==='aguardando_docs'?'docs':'retorno',data:v,hora:'',dataInicio:'',dataFim:'',feito:false,dataFeito:''});
+    return;
+  }
+  _applyPV2(p,field,value);
 };
 
 window.addEventListener('resize',setTop);

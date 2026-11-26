@@ -4,11 +4,17 @@ processo, para calibrar o Monitor STJ. Só lê dados públicos e imprime no log.
 import json, os, urllib.request
 KEY=os.environ["DATAJUD_API_KEY"]
 URL="https://api-publica.datajud.cnj.jus.br/api_publica_stj/_search"
+import time, urllib.error
 def q(body):
-    req=urllib.request.Request(URL,data=json.dumps(body).encode(),headers={"Content-Type":"application/json","Authorization":"APIKey "+KEY},method="POST")
-    with urllib.request.urlopen(req,timeout=90) as r: return json.loads(r.read())
+    for t in range(6):
+        req=urllib.request.Request(URL,data=json.dumps(body).encode(),headers={"Content-Type":"application/json","Authorization":"APIKey "+KEY},method="POST")
+        try:
+            with urllib.request.urlopen(req,timeout=120) as r: return json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            print("HTTP",e.code,e.read().decode()[:300]); time.sleep(30*(t+1))
+    raise SystemExit("falhou")
 # 1) órgãos julgadores com movimento no último ano
-r=q({"size":0,"query":{"range":{"movimentos.dataHora":{"gte":"now-365d"}}},
+r=q({"size":0,"query":{"range":{"movimentos.dataHora":{"gte":"now-120d"}}},
      "aggs":{"o":{"terms":{"field":"orgaoJulgador.codigo","size":400},
        "aggs":{"n":{"top_hits":{"size":1,"_source":["orgaoJulgador"]}}}}}})
 print("TOTAL_ULTIMO_ANO",r["hits"]["total"])

@@ -129,6 +129,12 @@ def nomes_gabinetes():
     dados = post_api({"size": 0, "query": {"range": {"dataAjuizamento": {"gte": "2024-01-01"}}},
                       "aggs": {"g": {"terms": {"field": "orgaoJulgador.nome.keyword", "size": 300}}}})
     chaves = [b["key"] for b in (dados or {}).get("aggregations", {}).get("g", {}).get("buckets", [])]
+    arq = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "stj", "gabinetes.json")
+    if not chaves:
+        try:
+            salvos = json.load(open(arq, encoding="utf-8"))
+            log("  Base não listou os gabinetes; usando os nomes guardados."); return {n: (t, k) for n, (t, k) in salvos.items()}
+        except Exception: return {}
     achados = {}
     for nome, turma, trecho in MINISTROS:
         alvo = sem_acento(trecho)
@@ -138,6 +144,8 @@ def nomes_gabinetes():
             log(f"  {nome}: {hits}")
         else:
             log(f"  {nome}: gabinete não encontrado na base")
+    try: json.dump({n: [t, k] for n, (t, k) in achados.items()}, open(arq, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    except Exception: pass
     return achados
 
 def area_de(assuntos):

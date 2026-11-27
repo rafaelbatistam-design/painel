@@ -110,7 +110,7 @@ def post_api(body):
     if not API_KEY:
         log("ERRO: chave do DataJud ausente."); sys.exit(1)
     payload = json.dumps(body).encode("utf-8")
-    for tentativa in range(5):
+    for tentativa in range(3):
         req = urllib.request.Request(API_URL, data=payload, method="POST",
               headers={"Content-Type": "application/json", "Authorization": f"APIKey {API_KEY}"})
         try:
@@ -186,7 +186,7 @@ def coletar_gab(nome, turma, chaves, grupo, consulta, desde):
     elif rot == "outros": must_not.append({"terms": {"classe.nome.keyword": [c for _, cl in GRUPOS if cl for c in cl]}})
     linhas, after = [], None
     while True:
-        body = {"size": 200, "query": {"bool": {"must": must, "must_not": must_not}},
+        body = {"size": 60, "query": {"bool": {"must": must, "must_not": must_not}},
                 "_source": ["numeroProcesso", "classe.nome", "assuntos.nome", "movimentos.nome", "movimentos.dataHora", "dataAjuizamento"],
                 "sort": [{"@timestamp": {"order": "asc"}}]}
         if after: body["search_after"] = after
@@ -209,7 +209,7 @@ def coletar_gab(nome, turma, chaves, grupo, consulta, desde):
             orgao = "2ª Seção" if classe in CLASSES_SECAO else turma
             linhas.append([num, classe, orgao, nome, area_de(assuntos), assuntos, chegada, sit, data_pauta,
                            (ult.get("nome") or "").strip(), (ult.get("dataHora") or "")[:10]])
-        if len(hits) < 200: return linhas, True
+        if len(hits) < 60: return linhas, True
         after = hits[-1].get("sort")
         time.sleep(4.0)
 
@@ -224,6 +224,10 @@ def coletar(cache):
         log("Base sem resposta para a lista de gabinetes."); return [], {"falhas": ["lista de gabinetes"], "cache": cache}
     grupos = GRUPOS if MODO == "completo" else [("todos", None)]
     pendentes = [(nome, turma, chaves, g) for nome, (turma, chaves) in gabs.items() for g in grupos]
+    # primeiro o que ainda não tem nenhum dado guardado; depois o que já tem (só para atualizar)
+    def tem_cache(nome, g):
+        return any(l[3] == nome and (g[0] == "todos" or (l[1] in (g[1] or []) if g[1] else l[1] not in ("Agravo em Recurso Especial", "Recurso Especial"))) for l in cache.values())
+    pendentes.sort(key=lambda x: tem_cache(x[0], x[3]))
     log(f"=== Modo {MODO}: {len(pendentes)} consultas, andamentos desde {consulta} ===")
     novos_dados, ok_set, falhas = {}, set(), []
     for rodada in (1, 2):

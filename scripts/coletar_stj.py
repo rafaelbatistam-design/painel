@@ -179,7 +179,7 @@ def coletar_gab(nome, turma, chaves, grupo, consulta, desde):
     """Processos do gabinete, do grupo de classes, com andamento desde a data. Devolve (linhas, ok)."""
     rot, classes = grupo
     must = [{"terms": {"orgaoJulgador.nome.keyword": chaves}},
-            {"range": {"movimentos.dataHora": {"gte": consulta}}}]
+            {"range": {"dataHoraUltimaAtualizacao": {"gte": consulta}}}]  # campo do topo: consulta bem mais leve que varrer os andamentos
     must_not = [{"terms": {"movimentos.nome.keyword": FIM + DECISOES}},
                 {"terms": {"classe.nome.keyword": sorted(CLASSES_FORA)}}]
     if classes: must.append({"terms": {"classe.nome.keyword": classes}})
@@ -209,7 +209,10 @@ def coletar_gab(nome, turma, chaves, grupo, consulta, desde):
             orgao = "2ª Seção" if classe in CLASSES_SECAO else turma
             linhas.append([num, classe, orgao, nome, area_de(assuntos), assuntos, chegada, sit, data_pauta,
                            (ult.get("nome") or "").strip(), (ult.get("dataHora") or "")[:10]])
-        if len(hits) < 60: return linhas, True
+        if len(hits) < 60:
+            # todo gabinete tem processos; zero absoluto no modo completo indica resposta anômala da base
+            if MODO == "completo" and not linhas and after is None and not hits and grupo[0] != "outros": return linhas, False
+            return linhas, True
         after = hits[-1].get("sort")
         time.sleep(4.0)
 
